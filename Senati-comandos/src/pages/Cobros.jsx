@@ -19,7 +19,7 @@ const CobroViewer = () => {
         console.log("✅ Proceso completado");
       }
     );
-    console.log("holaa");
+   
     return () => es.close();
   }, []);
   const copiarTabla = async (id) => {
