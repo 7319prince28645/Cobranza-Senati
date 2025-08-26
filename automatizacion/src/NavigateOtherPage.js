@@ -23,8 +23,7 @@ async function navigateToOtherPage(page, nombreHoja) {
     return;
   }
 
-  await page.waitForSelector("input#P3_TERM_CODE");
-  await page.type("input#P3_TERM_CODE", "202502");
+
 }
 
 exports.navigateToOtherPage = navigateToOtherPage;

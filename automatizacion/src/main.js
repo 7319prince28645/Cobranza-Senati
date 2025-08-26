@@ -11,22 +11,26 @@ async function main(onProgress = () => {}) {
   await login(page, "000196942", "040766");
 
   const hojasConIds = await LeerTodasLasHojas();
- 
 
   await navigateToOtherPage(page, hojasConIds);
 
- for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
-  // Procesa la hoja
-  const resultados = await RecorrerAlumnos(page, ids, nombreHoja);
-
-  // 🚀 Solo envío al front cuando termine la hoja completa
-  onProgress({
-    hoja: nombreHoja,
-    registros: resultados.length,
-    resultados
-  });
-}
-
+  for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
+    const resultados = [];
+    // Procesar alumnos de la hoja uno por uno
+    for (const id of ids) {
+      const [resultado] = await RecorrerAlumnos(page, [id], nombreHoja);
+      resultados.push({
+        id,
+        ...resultado,
+      });
+      // 🚀 Ahora mandamos resultado inmediato al front
+     
+    }
+     onProgress({
+        hoja: nombreHoja,
+        resultados,
+      });
+  }
 
   await browser.close();
   onProgress("✅ Proceso finalizado");

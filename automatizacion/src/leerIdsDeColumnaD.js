@@ -16,10 +16,21 @@ async function LeerTodasLasHojas() {
   try {
     // 1. Obtener metadata para saber títulos de las hojas
     const sheetMeta = await sheets.spreadsheets.get({ spreadsheetId });
-    const sheetTitles = sheetMeta.data.sheets.map(sheet => sheet.properties.title);
+    let sheetTitles = sheetMeta.data.sheets.map(
+      (sheet) => sheet.properties.title
+    );
+
+    // excluir hojas específicas (insensible a mayúsculas)
+    const hojasExcluir = ["ID`s CON DEUDA JULIO", "Dashboard"].map((h) =>
+      h.toLowerCase()
+    );
+
+    sheetTitles = sheetTitles.filter(
+      (title) => !hojasExcluir.includes(title.toLowerCase())
+    );
 
     // 2. Construir todas las ranges
-    const ranges = sheetTitles.map(title => `${title}!D5:D`);
+    const ranges = sheetTitles.map((title) => `${title}!D5:D`);
 
     // 3. Hacer UNA SOLA llamada a batchGet
     const res = await sheets.spreadsheets.values.batchGet({
@@ -31,7 +42,7 @@ async function LeerTodasLasHojas() {
     res.data.valueRanges.forEach((rangeObj, idx) => {
       const title = sheetTitles[idx];
       const valores = rangeObj.values || [];
-      resultados[title] = valores.map(row => row[0]);
+      resultados[title] = valores.map((row) => row[0]);
     });
 
     return resultados;
