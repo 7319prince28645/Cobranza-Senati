@@ -82,7 +82,9 @@ const CobroViewer = () => {
             "text/plain": new Blob([texto], { type: "text/plain" }),
           }),
         ]);
-        alert("✅ Imagen + texto copiados. Según la app, puede aparecer ambos o solo uno.");
+        alert(
+          "✅ Imagen + texto copiados. Según la app, puede aparecer ambos o solo uno."
+        );
       } catch (err) {
         console.error("❌ Error al copiar: ", err);
       }
@@ -91,7 +93,9 @@ const CobroViewer = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">📡 Reporte de Cobros por Hoja</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center text-gray-800">
+        📡 Reporte de Cobros por Hoja
+      </h1>
 
       <ul className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {logs.map((hoja, i) => {
@@ -115,7 +119,8 @@ const CobroViewer = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                 <div>
                   <h2 className="font-semibold text-lg text-gray-800">
-                    📘 Hoja: <span className="text-blue-600">{hoja?.msg?.hoja}</span>
+                    📘 Hoja:{" "}
+                    <span className="text-blue-600">{hoja?.msg?.hoja}</span>
                   </h2>
                   <p className="text-sm text-gray-500">
                     {hoja?.msg?.resultados?.length ?? 0} registros
@@ -159,7 +164,9 @@ const CobroViewer = () => {
                       <th>ID</th>
                       <th>Nombre</th>
                       <th className="text-center">NRC</th>
-                      {tieneMatricula && <th className="text-center">Matrícula</th>}
+                      {tieneMatricula && (
+                        <th className="text-center">Matrícula</th>
+                      )}
                       <th className="text-center">Concepto</th>
                       <th className="text-center">Vencimiento</th>
                       <th className="text-center">Estado</th>
@@ -182,19 +189,30 @@ const CobroViewer = () => {
 
                       const estadoEsPendiente =
                         (d?.estado ?? "").toLowerCase() === "pendiente de pago";
-                      const estadoClass = estadoEsPendiente ? "text-red-600 font-semibold" : "";
-                      const nrcDistinto = d?.nrc && nrcEsperado && d.nrc !== nrcEsperado;
+                      const estadoClass = estadoEsPendiente
+                        ? "text-red-600 font-semibold"
+                        : "";
+                      const nrcDistinto =
+                        d?.nrc && nrcEsperado && d.nrc !== nrcEsperado;
 
                       if (!d) {
                         return (
                           <tr key={j} className="bg-red-50/60 hover:bg-red-50">
-                            <td className="p-2 border-t text-center text-gray-600">{res?.id ?? "-"}</td>
-                            <td className="p-2 border-t">{res?.nombreAlumno ?? "-"}</td>
+                            <td className="p-2 border-t text-center text-gray-600">
+                              {res?.id ?? "-"}
+                            </td>
+                            <td className="p-2 border-t">
+                              {res?.nombreAlumno ?? "-"}
+                            </td>
                             <td className="p-2 border-t text-center">-</td>
                             {tieneMatricula && (
-                              <td className="p-2 border-t text-center text-red-500 italic">❌ Sin matrícula</td>
+                              <td className="p-2 border-t text-center text-red-500 italic">
+                                ❌ Sin matrícula
+                              </td>
                             )}
-                            <td className="p-2 border-t text-center text-red-600 italic">Sin datos</td>
+                            <td className="p-2 border-t text-center text-red-600 italic">
+                              Sin datos
+                            </td>
                             <td className="p-2 border-t text-center">—</td>
                             <td className="p-2 border-t text-center">—</td>
                           </tr>
@@ -203,23 +221,43 @@ const CobroViewer = () => {
 
                       return (
                         <tr key={j} className="hover:bg-gray-50">
-                          <td className={`p-2 border-t text-center ${estadoClass}`}>{d?.id ?? res?.id ?? "-"}</td>
-                          <td className={`p-2 border-t ${estadoClass}`}>{res?.nombreAlumno ?? "-"}</td>
-                          <td className={`p-2 border-t text-center ${nrcDistinto ? "text-red-600 font-semibold" : ""}`}>
+                          <td
+                            className={`p-2 border-t text-center ${estadoClass}`}
+                          >
+                            {d?.id ?? res?.id ?? "-"}
+                          </td>
+                          <td className={`p-2 border-t ${estadoClass}`}>
+                            {res?.nombreAlumno ?? "-"}
+                          </td>
+                          <td
+                            className={`p-2 border-t text-center ${
+                              nrcDistinto ? "text-red-600 font-semibold" : ""
+                            }`}
+                          >
                             {d?.nrc ?? "-"}
                             {nrcDistinto && <span className="ml-1">❌</span>}
                           </td>
                           {tieneMatricula && (
                             <td className="p-2 border-t text-center">
                               {matricula
-                                ? (matricula.estado === "BECADO" ? "Cancelada" : matricula.estado)
+                                ? matricula.estado === "BECADO"
+                                  ? "Cancelada"
+                                  : matricula.estado
                                 : "❌ Sin matrícula"}
                             </td>
                           )}
-                          <td className="p-2 border-t text-center">{d?.concepto ?? "-"}</td>
-                          <td className="p-2 border-t text-center">{d?.fechaVencimiento ?? "-"}</td>
-                          <td className={`p-2 border-t text-center ${estadoClass}`}>
-                            {d?.estado === "BECADO" ? "Cancelada" : d?.estado ?? "-"}
+                          <td className="p-2 border-t text-center">
+                            {d?.concepto ?? "-"}
+                          </td>
+                          <td className="p-2 border-t text-center">
+                            {d?.fechaVencimiento ?? "-"}
+                          </td>
+                          <td
+                            className={`p-2 border-t text-center ${estadoClass}`}
+                          >
+                            {d?.estado === "BECADO"
+                              ? "Cancelada"
+                              : d?.estado ?? "-"}
                           </td>
                         </tr>
                       );
@@ -231,7 +269,8 @@ const CobroViewer = () => {
               {/* leyenda compacta */}
               <div className="mt-3 text-xs text-gray-500">
                 <span className="inline-block mr-3">
-                  Es indispensable que el pago se realice al inicio de cada ciclo
+                  Es indispensable que el pago se realice al inicio de cada
+                  ciclo
                 </span>
               </div>
             </li>
