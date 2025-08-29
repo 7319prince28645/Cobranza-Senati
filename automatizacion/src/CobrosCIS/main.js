@@ -6,17 +6,8 @@ const { RecorrerAlumnos } = require("./RecorrerAlumnos");
 
 async function main(onProgress = () => {}) {
   const browser = await puppeteer.launch({
-    headless: true, // 👈 importante en Render
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-      "--disable-accelerated-2d-canvas",
-      "--no-first-run",
-      "--no-zygote",
-      "--single-process", // 👈 evita errores en contenedores limitados
-      "--disable-gpu",
-    ],
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
   const page = await browser.newPage();
