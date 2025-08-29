@@ -3,11 +3,10 @@ const cors = require("cors");
 const main = require("./src/CobrosCIS/main");
 
 const app = express();
-const port = 3000;
-
+const port = process.env.PORT || 3000; 
 
 app.use(cors({
-  origin: "http://localhost:5173",   // 👈 tu frontend
+  origin: "*",   // 👈 tu frontend
   methods: ["GET", "POST"],
   credentials: false
 }));
@@ -17,7 +16,7 @@ app.get("/automatizacion-stream", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Origin", "*");
 
   res.flushHeaders(); // 👈 asegura que se manden los headers de inmediato
 

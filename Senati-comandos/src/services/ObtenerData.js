@@ -1,5 +1,6 @@
 export const ImportDataStream = (onMessage, onDone) => {
-  const eventSource = new EventSource("http://localhost:3000/automatizacion-stream");
+  const urlApi = import.meta.env.VITE_URL_API_LOCAL;
+  const eventSource = new EventSource(`${urlApi}/automatizacion-stream`);
 
   // Cada mensaje que viene del backend (res.write en Node)
   eventSource.onmessage = (event) => {
