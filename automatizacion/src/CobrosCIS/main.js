@@ -5,7 +5,20 @@ const { navigateToOtherPage } = require("./NavigateOtherPage");
 const { RecorrerAlumnos } = require("./RecorrerAlumnos");
 
 async function main(onProgress = () => {}) {
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    headless: true, // 👈 importante en Render
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process", // 👈 evita errores en contenedores limitados
+      "--disable-gpu",
+    ],
+  });
+
   const page = await browser.newPage();
 
   await login(page, "000196942", "040766");
@@ -23,13 +36,13 @@ async function main(onProgress = () => {}) {
         id,
         ...resultado,
       });
-      // 🚀 Ahora mandamos resultado inmediato al front
-     
-    }
-     onProgress({
+
+      // 🚀 Mandamos resultado inmediato al front
+      onProgress({
         hoja: nombreHoja,
         resultados,
       });
+    }
   }
 
   await browser.close();
