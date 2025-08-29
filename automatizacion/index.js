@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const main = require("./src/main");
+const main = require("./src/CobrosCIS/main");
 
 const app = express();
 const port = 3000;
