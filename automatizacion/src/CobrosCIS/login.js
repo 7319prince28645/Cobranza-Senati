@@ -1,18 +1,32 @@
 // src/login.js
 async function login(page, username, password) {
-  await page.goto('https://sinfo.senati.edu.pe/', { waitUntil:'networkidle2' });
+  // Ir al login
+  await page.goto("https://sinfo.senati.edu.pe/", { waitUntil: "domcontentloaded" });
 
-  await page.type('input[placeholder="Nombre de usuario"]', username);
-  await page.type('input[placeholder="Contraseña"]', password);
-  await page.click('button');
-  
-await page.waitForSelector('button[aria-label="Académicos"]'); // espera a que aparezca el botón
+  // Localizadores
+  const userInput = page.locator('input[placeholder="Nombre de usuario"]');
+  const passInput = page.locator('input[placeholder="Contraseña"]');
+  const loginButton = page.locator('button:has-text("Continuar")'); // ajusta el texto exacto si es distinto
 
-// Una vez visible, puedes dar clic:
-await page.click('button[aria-label="Académicos"]'); 
-console.log('Navegado a Académicos');
+  // Esperar y rellenar usuario
+  await userInput.waitFor({ timeout: 30000 });
+  await userInput.fill(username);
 
+  // Rellenar contraseña
+  await passInput.fill(password);
 
+  // Clic en login
+  await loginButton.click();
+
+  // Esperar que cargue la página post-login
+  await page.waitForLoadState("networkidle");
+
+  // Ahora espera al botón de "Académicos"
+  const academicosBtn = page.locator('button[aria-label="Académicos"]');
+  await academicosBtn.waitFor({ timeout: 30000 });
+  await academicosBtn.click();
+
+  console.log("✅ Navegado a Académicos");
 }
 
 module.exports = login;

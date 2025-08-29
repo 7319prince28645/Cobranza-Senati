@@ -5,8 +5,9 @@
   "bin": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-      "start": "node index.js", 
-    "dev": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "postinstall": "npx playwright install --with-deps"
   },
   "keywords": [],
   "author": "",
@@ -18,6 +19,7 @@
     "googleapis": "^150.0.1",
     "open": "^10.2.0",
     "p-limit": "^7.1.1",
+    "playwright": "^1.55.0",
     "puppeteer": "^24.17.1",
     "puppeteer-cluster": "^0.24.0"
   },

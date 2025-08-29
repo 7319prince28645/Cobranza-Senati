@@ -28,7 +28,7 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
 
     // Click en botón y esperar que cargue nueva tabla
     await Promise.all([
-      page.waitForNavigation({ waitUntil: "networkidle0" }),
+      page.waitForNavigation({ waitUntil: "networkidle" }),
       page.click("a.t12Button"),
     ]);
 

@@ -1,15 +1,16 @@
-const puppeteer = require("puppeteer");
+const { chromium } = require("playwright");
 const login = require("./login");
 const LeerTodasLasHojas = require("./leerIdsDeColumnaD");
 const { navigateToOtherPage } = require("./NavigateOtherPage");
 const { RecorrerAlumnos } = require("./RecorrerAlumnos");
 
 async function main(onProgress = () => {}) {
-  const browser = await puppeteer.launch({
-    headless: true,
+  // 🚀 Lanzamos Playwright en modo headless
+  const browser = await chromium.launch({
+    headless: false, // 👈 muestra la ventana
+    slowMo: 100, // 👈 retrasa cada acción (100ms) para que veas qué hace
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
-
   const page = await browser.newPage();
 
   await login(page, "000196942", "040766");
@@ -20,20 +21,13 @@ async function main(onProgress = () => {}) {
 
   for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
     const resultados = [];
-    // Procesar alumnos de la hoja uno por uno
     for (const id of ids) {
       const [resultado] = await RecorrerAlumnos(page, [id], nombreHoja);
-      resultados.push({
-        id,
-        ...resultado,
-      });
+      resultados.push({ id, ...resultado });
 
       // 🚀 Mandamos resultado inmediato al front
-      onProgress({
-        hoja: nombreHoja,
-        resultados,
-      });
     }
+    onProgress({ hoja: nombreHoja, resultados });
   }
 
   await browser.close();
