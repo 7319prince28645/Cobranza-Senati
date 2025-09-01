@@ -25,6 +25,8 @@ const CobroViewer = () => {
     return () => es.close();
   };
 
+  console.log("Logs actuales:", logs);
+
   return (
     <div className="p-4  space-y-6">
       {/* Título */}
@@ -52,13 +54,13 @@ const CobroViewer = () => {
       </div>
 
 
-      {logs.length > 0 ? (
+      {/* {logs.length > 0 ? (
         <RenderCobros logs={logs} />
       ) : (
         <p className="text-gray-500 text-center py-6">
           No hay datos para mostrar.
         </p>
-      )}
+      )} */}
     </div>
   );
 };

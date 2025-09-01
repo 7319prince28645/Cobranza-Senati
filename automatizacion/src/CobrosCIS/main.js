@@ -22,7 +22,7 @@ async function main(onProgress = () => {}) {
   for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
     const resultados = [];
     for (const id of ids) {
-      const [resultado] = await RecorrerAlumnos(page, [id], nombreHoja);
+      const [resultado] = await RecorrerAlumnos(page, id, nombreHoja);
       resultados.push({ id, ...resultado });
 
       // 🚀 Mandamos resultado inmediato al front
