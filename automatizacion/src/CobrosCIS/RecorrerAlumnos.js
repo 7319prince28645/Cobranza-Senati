@@ -26,42 +26,43 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
         .locator("table tbody tr")
         .first()
         .waitFor({ state: "visible", timeout: 60000 }),
+      page
+        .locator("#studentInfo li:has(strong:has-text('Nombre:'))")
+        .waitFor({ state: "visible", timeout: 60000 }),
     ]);
 
-    // --- Extraer datos usando Playwright ---
-    const nombreAlumno = await page.locator(
-      "#studentInfo li:has(strong:has-text('Nombre'))"
-    );
+    // Ahora sí extraemos el nombre de forma segura
+    const nombreAlumno = await page
+      .locator("#studentInfo li:has(strong:has-text('Nombre:'))")
+      .evaluate((el) => el.innerText.replace("Nombre:", "").trim());
 
-    const filas = page.locator("table tbody tr");
-    const rowCount = await filas.count();
+    // --- Procesar filas de la tabla (método optimizado) ---
+    const datos = await page.evaluate((nrcEsperado) => {
+      const rows = document.querySelectorAll("table tbody tr");
+      const result = [];
 
-    if (rowCount <= 1) {
+      if (rows.length <= 1) return result;
+
+      for (let i = 1; i < rows.length; i++) {
+        // saltamos cabecera
+        const cells = rows[i].querySelectorAll("td");
+        const fila = Array.from(cells).map((c) => (c.textContent || "").trim());
+
+        result.push({
+          nrc: fila[0] || "",
+          all: fila, // 👈 todos los td en orden
+        });
+      }
+      return result;
+    }, nrcEsperado);
+
+    if (datos.length === 0) {
       resultados.push({
         id,
         nombreAlumno,
-        error: "❌ No se encontró el cuerpo de la tabla (tbody)",
+        error: "❌ No se encontraron datos en la tabla",
       });
       return resultados;
-    }
-
-    const datos = [];
-    for (let i = 1; i < rowCount; i++) {
-      // saltar cabecera
-      const fila = filas.nth(i);
-
-      datos.push({
-        id,
-        nrc: ((await fila.locator("td").nth(0).textContent()) || "").trim(),
-        concepto: (
-          (await fila.locator("td").nth(2).textContent()) || ""
-        ).trim(),
-        monto: ((await fila.locator("td").nth(4).textContent()) || "").trim(),
-        fechaVencimiento: (
-          (await fila.locator("td").nth(5).textContent()) || ""
-        ).trim(),
-        estado: ((await fila.locator("td").nth(6).textContent()) || "").trim(),
-      });
     }
 
     const encontrado = datos.find(
@@ -74,7 +75,9 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
             id,
             nombreAlumno,
             match: true,
-            mensaje: `✔️ NRC coincide (${nrcEsperado}). Estado del pago: ${encontrado.estado}`,
+            mensaje: `✔️ NRC coincide (${nrcEsperado}). Estado del pago: ${
+              encontrado.all[6] || ""
+            }`,
             datos,
           }
         : {
