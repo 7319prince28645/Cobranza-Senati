@@ -54,13 +54,13 @@ const CobroViewer = () => {
       </div>
 
 
-      {/* {logs.length > 0 ? (
+      {logs.length > 0 ? (
         <RenderCobros logs={logs} />
       ) : (
         <p className="text-gray-500 text-center py-6">
           No hay datos para mostrar.
         </p>
-      )} */}
+      )}
     </div>
   );
 };

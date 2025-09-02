@@ -36,23 +36,39 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
       .locator("#studentInfo li:has(strong:has-text('Nombre:'))")
       .evaluate((el) => el.innerText.replace("Nombre:", "").trim());
 
+    const codigoPago = await page
+      .locator("div.codPayValue")
+      .evaluate((el) => el.innerText.trim());
+
     // --- Procesar filas de la tabla (método optimizado) ---
     const datos = await page.evaluate((nrcEsperado) => {
       const rows = document.querySelectorAll("table tbody tr");
       const result = [];
 
-      if (rows.length <= 1) return result;
-
       for (let i = 1; i < rows.length; i++) {
-        // saltamos cabecera
         const cells = rows[i].querySelectorAll("td");
-        const fila = Array.from(cells).map((c) => (c.textContent || "").trim());
+        if (!cells.length) continue;
 
-        result.push({
-          nrc: fila[0] || "",
-          all: fila, // 👈 todos los td en orden
-        });
+        const nrc = (cells[0]?.textContent || "").trim();
+        const concepto = (cells[2]?.textContent || "").trim();
+        const monto = (cells[4]?.textContent || "").trim();
+        const fechaVencimiento = (cells[5]?.textContent || "").trim();
+        const estado = (cells[6]?.textContent || "").trim();
+
+        // 👉 Guardar solo si:
+        // - NRC es numérico
+        // - O si NRC está vacío pero concepto tiene algo relevante
+        if (/^\d+$/.test(nrc) || (nrc === "" && concepto !== "")) {
+          result.push({
+            nrc,
+            concepto,
+            monto,
+            fechaVencimiento,
+            estado,
+          });
+        }
       }
+
       return result;
     }, nrcEsperado);
 
@@ -60,6 +76,7 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
       resultados.push({
         id,
         nombreAlumno,
+        codigoPago,
         error: "❌ No se encontraron datos en la tabla",
       });
       return resultados;
@@ -74,15 +91,15 @@ async function RecorrerAlumnos(page, id, nombreHoja) {
         ? {
             id,
             nombreAlumno,
+            codigoPago,
             match: true,
-            mensaje: `✔️ NRC coincide (${nrcEsperado}). Estado del pago: ${
-              encontrado.all[6] || ""
-            }`,
+            mensaje: `✔️ NRC coincide (${nrcEsperado}). Estado del pago: ${encontrado.estado}`,
             datos,
           }
         : {
             id,
             nombreAlumno,
+            codigoPago,
             match: false,
             mensaje: `⚠️ Alumno no pertenece al NRC ${nrcEsperado}`,
             datos,

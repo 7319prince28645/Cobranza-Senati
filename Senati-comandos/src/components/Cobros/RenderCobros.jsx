@@ -24,18 +24,28 @@ function RenderCobros({ logs }) {
 
     // 2. cortar filas con más de 2 seguidas sin datos
     let consecutivosVacios = 0;
-    Array.from(clone.querySelectorAll("tbody tr")).forEach((tr) => {
-      const texto = tr.innerText.toLowerCase();
-      const esVacio =
-        texto.includes("sin datos") || texto.includes("sin matrícula");
-      if (esVacio) {
-        consecutivosVacios++;
-      } else {
-        consecutivosVacios = 0;
-      }
-      if (consecutivosVacios > 0) tr.remove(); // ❌ borra lo que sobra
-    });
+    Array.from(clone.querySelectorAll("tbody tr")).forEach(
+      (tr, index, filas) => {
+        const texto = tr.innerText.toLowerCase();
+        const esVacio =
+          !texto || /(^\s*$|no hay datos|sin datos|—|n\/a)/.test(texto);
 
+        if (esVacio) {
+          consecutivosVacios++;
+        } else {
+          consecutivosVacios = 0;
+        }
+
+        // Si ya tenemos 2 consecutivos vacíos, eliminar esta y todas las que siguen
+        if (consecutivosVacios >= 1) {
+          // borrar desde la fila actual hasta el final
+          for (let i = index; i < filas.length; i++) {
+            filas[i].remove();
+          }
+          return; // cortar ejecución del forEach
+        }
+      }
+    );
     // usar canvas sobre el clon (temporal oculto)
     const wrapper = document.createElement("div");
     wrapper.style.position = "fixed";
@@ -72,183 +82,238 @@ function RenderCobros({ logs }) {
   };
   return (
     <div className="min-h-screen p-3">
-  {/* Título */}
-  <h1 className="text-xl font-semibold mb-2 text-center text-gray-800 tracking-tight">
-    📡 Reporte de Cobros por Hoja
-  </h1>
+      {/* Título */}
+      <h1 className="text-xl font-semibold mb-2 text-center text-gray-800 tracking-tight">
+        📡 Reporte de Cobros por Hoja
+      </h1>
 
-  <ul className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-    {logs.map((hoja, i) => {
-      const tablaId = `tabla-${i}`;
-      const nrcEsperado = hoja?.msg?.hoja?.split("-")[0]?.trim() ?? "";
+      <ul className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {logs.map((hoja, i) => {
+          const tablaId = `tabla-${i}`;
+          const nrcEsperado = hoja?.msg?.hoja?.split("-")[0]?.trim() ?? "";
 
-      const tieneMatricula = Array.isArray(hoja?.msg?.resultados)
-        ? hoja.msg.resultados.some((res) =>
-            (res?.datos ?? []).some((item) =>
-              (item?.concepto ?? "").toLowerCase().includes("matricula")
-            )
-          )
-        : false;
+          let alumnosCancelados = [];
+          console.log("Alumnos cancelados:", alumnosCancelados);
+          const tieneMatricula = Array.isArray(hoja?.msg?.resultados)
+            ? hoja.msg.resultados.some((res) =>
+                (res?.datos ?? []).some((item) =>
+                  (item?.concepto ?? "").toLowerCase().includes("matricula")
+                )
+              )
+            : false;
 
-      return (
-        <li
-          key={i}
-          className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-4"
-        >
-          {/* Encabezado */}
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h2 className="font-medium text-gray-800 text-sm">
-                📘 Hoja:{" "}
-                <span className="font-semibold text-blue-600">
-                  {hoja?.msg?.hoja}
-                </span>
-              </h2>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {hoja?.msg?.resultados?.length ?? 0} registros
-                {tieneMatricula && (
-                  <span className="ml-2 px-1.5 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-700">
-                    Matrícula
-                  </span>
-                )}
-              </p>
-
-              {tieneMatricula && (
-                <label className="mt-2 flex items-center text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={!!incluirMatricula[i]}
-                    onChange={(e) =>
-                      setIncluirMatricula((prev) => ({
-                        ...prev,
-                        [i]: e.target.checked,
-                      }))
-                    }
-                    className="mr-1.5 h-3 w-3 rounded border-gray-300"
-                  />
-                  Incluir matrícula en copia
-                </label>
-              )}
-            </div>
-
-            <button
-              onClick={() => copiarTabla(tablaId, i)}
-              className="px-2.5 py-1 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          return (
+            <li
+              key={i}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition p-4"
             >
-              📋 Copiar
-            </button>
-          </div>
+              {/* Encabezado */}
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h2 className="font-medium text-gray-800 text-sm">
+                    📘 Hoja:{" "}
+                    <span className="font-semibold text-blue-600">
+                      {hoja?.msg?.hoja}
+                    </span>
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {hoja?.msg?.resultados?.length ?? 0} registros
+                    {tieneMatricula && (
+                      <span className="ml-2 px-1.5 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-700">
+                        Matrícula
+                      </span>
+                    )}
+                  </p>
 
-          {/* Tabla */}
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table id={tablaId} className="w-full text-xs">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr className="[&>th]:px-2 [&>th]:py-1.5 [&>th]:text-left [&>th]:font-medium">
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th className="text-center">NRC</th>
-                  {tieneMatricula && <th className="text-center">Matrícula</th>}
-                  <th className="text-center">Concepto</th>
-                  <th className="text-center">Vencimiento</th>
-                  <th className="text-center">Estado</th>
-                </tr>
-              </thead>
+                  {tieneMatricula && (
+                    <label className="mt-2 flex items-center text-xs text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={!!incluirMatricula[i]}
+                        onChange={(e) =>
+                          setIncluirMatricula((prev) => ({
+                            ...prev,
+                            [i]: e.target.checked,
+                          }))
+                        }
+                        className="mr-1.5 h-3 w-3 rounded border-gray-300"
+                      />
+                      Incluir matrícula en copia
+                    </label>
+                  )}
+                </div>
 
-              <tbody className="divide-y divide-gray-100 text-gray-700">
-                {(hoja?.msg?.resultados ?? []).map((res, j) => {
-                  const datosValidos = (res?.datos ?? []).filter(
-                    (x) => x && (x.nrc || x.concepto || x.monto || x.estado)
-                  );
+                <button
+                  onClick={() => copiarTabla(tablaId, i)}
+                  className="px-2.5 py-1 text-xs rounded-md bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                >
+                  📋 Copiar
+                </button>
+              </div>
 
-                  const matricula = datosValidos.find((x) =>
-                    (x?.concepto ?? "").toLowerCase().includes("matricula")
-                  );
-                  const cuota = datosValidos.find((x) =>
-                    /cuota/i.test(x?.concepto ?? "")
-                  );
-                  const d = cuota || datosValidos[0] || null;
-
-                  const estadoEsPendiente =
-                    (d?.estado ?? "").toLowerCase() === "pendiente de pago";
-                  const estadoClass = estadoEsPendiente
-                    ? "text-red-600 font-semibold"
-                    : "";
-                  const nrcDistinto =
-                    d?.nrc && nrcEsperado && d.nrc !== nrcEsperado;
-
-                  if (!d) {
-                    return (
-                      <tr key={j} className="bg-red-50/60">
-                        <td className="px-2 py-1 text-center text-gray-500">
-                          {res?.id ?? "-"}
-                        </td>
-                        <td className="px-2 py-1">{res?.nombreAlumno ?? "-"}</td>
-                        <td className="px-2 py-1 text-center">-</td>
-                        {tieneMatricula && (
-                          <td className="px-2 py-1 text-center text-red-500 italic">
-                            ❌
-                          </td>
-                        )}
-                        <td className="px-2 py-1 text-center text-red-600 italic">
-                          Sin datos
-                        </td>
-                        <td className="px-2 py-1 text-center">—</td>
-                        <td className="px-2 py-1 text-center">—</td>
-                      </tr>
-                    );
-                  }
-
-                  return (
-                    <tr key={j} className="hover:bg-gray-50">
-                      <td className={`px-2 py-1 text-center ${estadoClass}`}>
-                        {d?.id ?? res?.id ?? "-"}
-                      </td>
-                      <td className={`px-2 py-1 ${estadoClass}`}>
-                        {res?.nombreAlumno ?? "-"}
-                      </td>
-                      <td
-                        className={`px-2 py-1 text-center ${
-                          nrcDistinto ? "text-red-600 font-semibold" : ""
-                        }`}
-                      >
-                        {d?.nrc ?? "-"}
-                        {nrcDistinto && <span className="ml-1">❌</span>}
-                      </td>
+              {/* Tabla */}
+              <div
+                id={tablaId}
+                className="overflow-x-auto rounded-lg border border-gray-200"
+              >
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr className="[&>th]:px-2 [&>th]:py-1.5  [&>th]:font-medium text-center">
+                      <th>N°</th>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th className="text-center">NRC</th>
                       {tieneMatricula && (
-                        <td className="px-2 py-1 text-center">
-                          {matricula
-                            ? matricula.estado === "BECADO"
-                              ? "Cancelada"
-                              : matricula.estado
-                            : "❌"}
-                        </td>
+                        <th className="text-center">Matrícula</th>
                       )}
-                      <td className="px-2 py-1 text-center">
-                        {d?.concepto ?? "-"}
-                      </td>
-                      <td className="px-2 py-1 text-center">
-                        {d?.fechaVencimiento ?? "-"}
-                      </td>
-                      <td className={`px-2 py-1 text-center ${estadoClass}`}>
-                        {d?.estado === "BECADO" ? "Cancelada" : d?.estado ?? "-"}
-                      </td>
+                      <th className="text-center">Codigo de Pago</th>
+                      <th className="text-center">Vencimiento</th>
+                      <th className="text-center">Estado</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  </thead>
 
-          {/* Leyenda compacta */}
-          <div className="mt-2 text-[11px] text-gray-500">
-            ⚠️ Es indispensable que el pago se realice al inicio de cada ciclo
-          </div>
-        </li>
-      );
-    })}
-  </ul>
-</div>
+                  <tbody className="divide-y divide-gray-100 text-gray-700">
+                    {(hoja?.msg?.resultados ?? []).map((res, j) => {
+                      const datosValidos = (res?.datos ?? []).filter(
+                        (x) => x && (x.nrc || x.concepto || x.monto || x.estado)
+                      );
 
+                      // 📌 Buscar matrícula y cuotas
+                      const matricula = datosValidos.find((x) =>
+                        (x?.concepto ?? "").toLowerCase().includes("matricula")
+                      );
+
+                      // 📌 Buscar NRC más alto
+                      const d =
+                        datosValidos.length > 0
+                          ? datosValidos.reduce((max, x) => {
+                              const nrcNum = parseInt(x.nrc, 10) || 0; // si no tiene número → 0
+                              const maxNum = parseInt(max.nrc, 10) || 0;
+                              return nrcNum > maxNum ? x : max;
+                            })
+                          : null;
+
+                      const estadoEsPendiente =
+                        (d?.estado ?? "").toLowerCase() ===
+                          "pendiente de pago" ||
+                        (d?.estado ?? "").toLowerCase().includes("adeuda");
+
+                      if (estadoEsPendiente) {
+                        alumnosCancelados.push(res?.nombreAlumno);
+                      }
+
+                      const estadoClass = estadoEsPendiente
+                        ? "text-red-600 font-semibold"
+                        : "";
+
+                      const nrcDistinto =
+                        d?.nrc && nrcEsperado && d.nrc !== nrcEsperado;
+
+                      if (!d) {
+                        return (
+                          <tr key={j} className="bg-red-50/60">
+                            <td className="px-2 py-1 text-center text-gray-500">
+                              {res?.id ?? "-"}
+                            </td>
+                            <td className="px-2 py-1">
+                              {res?.nombreAlumno ?? "-"}
+                            </td>
+                            <td className="px-2 py-1 text-center">-</td>
+                            {tieneMatricula && (
+                              <td className="px-2 py-1 text-center text-red-500 italic">
+                                ❌
+                              </td>
+                            )}
+                            <td className="px-2 py-1 text-center text-red-600 italic">
+                              Sin datos
+                            </td>
+                            <td className="px-2 py-1 text-center">—</td>
+                            <td className="px-2 py-1 text-center">—</td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr key={j} className="hover:bg-gray-50">
+                          <td
+                            className={`px-2 py-1 text-center ${estadoClass}`}
+                          >
+                            {j + 1}
+                          </td>
+                          <td
+                            className={`px-2 py-1 text-center ${estadoClass}`}
+                          >
+                            {d?.id ?? res?.id ?? "-"}
+                          </td>
+                          <td className={`px-2 py-1 ${estadoClass}`}>
+                            {res?.nombreAlumno ?? "-"}
+                          </td>
+                          <td
+                            className={`px-2 py-1 text-center ${
+                              nrcDistinto ? "text-red-600 font-semibold" : ""
+                            }`}
+                          >
+                            {d?.nrc ?? "-"}
+                            {nrcDistinto && <span className="ml-1">❌</span>}
+                          </td>
+                          {tieneMatricula && (
+                            <td className="px-2 py-1 text-center">
+                              {matricula
+                                ? matricula.estado === "BECADO"
+                                  ? "Cancelada"
+                                  : matricula.estado
+                                : "❌"}
+                            </td>
+                          )}
+                          <td className="px-2 py-1 text-center">
+                            {res?.codigoPago ?? "-"}
+                          </td>
+                          <td className="px-2 py-1 text-center">
+                            {d?.fechaVencimiento ?? "-"}
+                          </td>
+                          <td
+                            className={`px-2 py-1 text-center ${estadoClass}`}
+                          >
+                            {d?.estado === "BECADO" ||
+                            d?.estado.includes("Adeuda")
+                              ? "Cancelada"
+                              : d?.estado ?? "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 p-3 text-[12px] text-gray-600 bg-gray-50 rounded-lg border border-gray-200">
+                <p className="flex items-center gap-1 mb-2">
+                  ⚠️{" "}
+                  <span>
+                    Es indispensable que el pago se realice al inicio de cada
+                    ciclo.
+                  </span>
+                </p>
+
+                <div className="flex justify-between items-center text-sm font-medium">
+                  <span className="text-amber-600">
+                    Pendiente de pago:{" "}
+                    {alumnosCancelados.length > 0
+                      ? `(${alumnosCancelados.length})`
+                      : "0"}{" "}
+                    alumnos
+                  </span>
+
+                  <span className="text-emerald-600">
+                    Cancelados:{" "}
+                    {hoja?.msg?.resultados.length - alumnosCancelados.length}
+                  </span>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
