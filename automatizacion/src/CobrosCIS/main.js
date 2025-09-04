@@ -8,7 +8,7 @@ async function main(onProgress = () => {}) {
   // 🚀 Lanzamos Playwright en modo headless
   const browser = await chromium.launch({
     headless: false, // 👈 muestra la ventana
-    slowMo: 100, // 👈 retrasa cada acción (100ms) para que veas qué hace
+    slowMo: 30, // 👈 retrasa cada acción (100ms) para que veas qué hace
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const page = await browser.newPage();
