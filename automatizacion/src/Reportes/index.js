@@ -1,29 +1,25 @@
 const express = require("express");
 const cors = require("cors");
 const main = require("./src/CobrosCIS/main");
-const reportesRoutes = require("./src/Reportes"); // ✅ Nuevo index.js
 
 const app = express();
 const port = process.env.PORT || 3000; 
 
+
 app.use(cors({
-  origin: "*",
+  origin: "*",   // 👈 tu frontend
   methods: ["GET", "POST"],
   credentials: false
 }));
 
-// ✅ Montar endpoints
-app.use("/api/cobros", main);
-app.use("/api/reportes", reportesRoutes);
-
-// ✅ Endpoint con streaming SSE
-app.get("/automatizacion-stream", async (req, res) => {
+// Endpoint con streaming SSE
+app.get("/fetch", async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  res.flushHeaders();
+  res.flushHeaders(); // 👈 asegura que se manden los headers de inmediato
 
   const keepAlive = setInterval(() => {
     res.write(`: keep-alive\n\n`);
