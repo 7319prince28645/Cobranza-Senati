@@ -1,0 +1,2 @@
+### Obtener reportes
+GET http://localhost:3000/administrativo/reportes
