@@ -6,12 +6,15 @@ const FetchReportesAdministrativo = require("./src/Administrativo");
 const app = express();
 const port = process.env.PORT || 3000; 
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST"],
   credentials: false
 }));
-
 
 // ✅ Montar endpoints
 app.use("/administrativo", FetchReportesAdministrativo);

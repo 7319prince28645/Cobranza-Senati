@@ -1,8 +1,9 @@
 const { chromium } = require("playwright");
 const login = require("../CobrosCIS/login");
 const { generateRandomDigits } = require("../CobrosCIS/GeneratoRandomDigits");
+const beautify = require("js-beautify").html;
 
-async function FetchReportes() {
+async function FetchReportes(id, fechaInicio, fechaFin) {
   const browser = await chromium.launch({
     headless: false,
     slowMo: 50,
@@ -51,27 +52,89 @@ async function FetchReportes() {
   console.log("🟢 Página de parámetros de reporte cargada.");
 
   // Esperar que aparezca el formulario
-  await page.waitForSelector('text=Parametros de reporte', { timeout: 10000 });
+  await page.waitForSelector("text=Parametros de reporte", { timeout: 10000 });
 
   // Seleccionar la opción "Instructor"
-  await page.click('input[type="radio"][value="Instructor"]', { timeout: 5000 }).catch(() => {});
+  await page
+    .click('input[type="radio"][value="Instructor"]', { timeout: 5000 })
+    .catch(() => {});
 
   // Ingresar el ID
-  await page.fill('input[name="P9_IDS"]', '000196942').catch(() => {});
+  await page.fill('input[name="P9_IDS"]', id).catch(() => {});
 
   // Rellenar las fechas
-  await page.fill('input[name="P9_FECHA_INI"]', '01/10/2025').catch(() => {});
-  await page.fill('input[name="P9_FECHA_FIN"]', '30/10/2025').catch(() => {});
+  await page.fill('input[name="P9_FECHA_INI"]', fechaInicio).catch(() => {});
+  await page.fill('input[name="P9_FECHA_FIN"]', fechaFin).catch(() => {});
 
   // Clic en el botón "ver calendario"
-  await page.click('input[value="ver calendario"]').catch(() => {});
+  await page.waitForSelector('a.t12Button:has-text("ver calendario")', {
+    timeout: 10000,
+  });
+  await page.click('a.t12Button:has-text("ver calendario")').catch(() => {});
 
   console.log("✅ Formulario rellenado correctamente.");
 
   // Si deseas, puedes esperar que cargue el resultado:
-  await page.waitForTimeout(5000);
 
-  // await browser.close(); // <- Cierra si no necesitas inspeccionar
-}
+  await page.waitForSelector("#dvContainer", { timeout: 20000 });
+
+  // 🔍 Procesar directamente dentro del DOM
+  const data = await page.$$eval(
+    "#dvContainer table.t12StandardCalendar td.formRegionBody, #dvContainer table.t12StandardCalendar td.formRegionBodyWE",
+    (tds) => {
+      const result = [];
+
+      tds.forEach((td) => {
+        const dayText = td.childNodes[0]?.textContent?.trim();
+        if (!dayText || isNaN(dayText)) return; // Ignorar celdas vacías o texto no numérico
+
+        const courseLinks = td.querySelectorAll("a font.descripcion");
+        const courses = [];
+
+        courseLinks.forEach((font) => {
+          const text = font.textContent.trim();
+
+          // Ejemplo de formato del texto:
+          // 26940 (NSID-312) 202520
+          // SALUD E HIGIENE OCUPACIONAL
+          // 07:00-11:30 > 31-A8-203
+
+          const lines = text
+            .split("\n")
+            .map((l) => l.trim())
+            .filter((l) => l);
+          if (lines.length >= 3) {
+            const [header, nombre, horarioAula] = lines;
+            const [codigo, resto] = header.split(" ");
+            const [seccion, ciclo] = resto.replace(/[()]/g, "").split(" ");
+            const [horario, aula] = horarioAula.split(">").map((s) => s.trim());
+
+            courses.push({
+              codigo,
+              seccion,
+              ciclo,
+              nombre,
+              horario,
+              aula,
+            });
+          }
+        });
+
+        if (courses.length > 0) {
+          result.push({ dia: dayText, cursos: courses });
+        }
+      });
+
+      return result;
+    }
+  );
+
+  console.log("✅ Datos estructurados:");
+  console.log(JSON.stringify(data, null, 2));
+
+
+  return data;
+
+};
 
 module.exports = FetchReportes;

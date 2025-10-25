@@ -1,2 +1,9 @@
 ### Obtener reportes
-GET http://localhost:3000/administrativo/reportes
+POST http://localhost:3000/administrativo/reportes
+Content-Type: application/json
+
+{
+  "id": "000627184",
+  "fechaInicio": "2025-10-01",
+  "fechaFin": "2025-10-30"
+}
