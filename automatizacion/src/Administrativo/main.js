@@ -1,7 +1,7 @@
 const { chromium } = require("playwright");
 const login = require("../CobrosCIS/login");
 const { generateRandomDigits } = require("../CobrosCIS/GeneratoRandomDigits");
-const beautify = require("js-beautify").html;
+const cheerio = require("cheerio");
 
 async function FetchReportes(id, fechaInicio, fechaFin) {
   const browser = await chromium.launch({
@@ -79,62 +79,25 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
   await page.waitForSelector("#dvContainer", { timeout: 20000 });
 
   // 🔍 Procesar directamente dentro del DOM
-  const data = await page.$$eval(
-    "#dvContainer table.t12StandardCalendar td.formRegionBody, #dvContainer table.t12StandardCalendar td.formRegionBodyWE",
-    (tds) => {
-      const result = [];
 
-      tds.forEach((td) => {
-        const dayText = td.childNodes[0]?.textContent?.trim();
-        if (!dayText || isNaN(dayText)) return; // Ignorar celdas vacías o texto no numérico
-
-        const courseLinks = td.querySelectorAll("a font.descripcion");
-        const courses = [];
-
-        courseLinks.forEach((font) => {
-          const text = font.textContent.trim();
-
-          // Ejemplo de formato del texto:
-          // 26940 (NSID-312) 202520
-          // SALUD E HIGIENE OCUPACIONAL
-          // 07:00-11:30 > 31-A8-203
-
-          const lines = text
-            .split("\n")
-            .map((l) => l.trim())
-            .filter((l) => l);
-          if (lines.length >= 3) {
-            const [header, nombre, horarioAula] = lines;
-            const [codigo, resto] = header.split(" ");
-            const [seccion, ciclo] = resto.replace(/[()]/g, "").split(" ");
-            const [horario, aula] = horarioAula.split(">").map((s) => s.trim());
-
-            courses.push({
-              codigo,
-              seccion,
-              ciclo,
-              nombre,
-              horario,
-              aula,
-            });
-          }
-        });
-
-        if (courses.length > 0) {
-          result.push({ dia: dayText, cursos: courses });
-        }
-      });
-
-      return result;
-    }
+  const tablas = await page.$$eval("table.t12StandardCalendar", (els) =>
+    els.map((el) => el.innerHTML)
   );
 
-  console.log("✅ Datos estructurados:");
-  console.log(JSON.stringify(data, null, 2));
+  const calendario = [];
 
+  tablas.forEach((html) => {
+    const $ = cheerio.load(html);
 
-  return data;
+    $(
+      "tr.formRegionHeader td.formRegionBody, tr.formRegionHeader td.formRegionBodyWE"
+    ).each((j, celda) => {
+      const dia = $(celda).text().trim().split("\n")[0];
+      calendario.push({ dia, sesiones: [] });
+    });
+  });
 
-};
+  console.log(JSON.stringify(calendario, null, 2));
+}
 
 module.exports = FetchReportes;
