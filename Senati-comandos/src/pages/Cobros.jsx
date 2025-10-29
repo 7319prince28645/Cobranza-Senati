@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ImportDataStream } from "@/services/ObtenerData";
 import RenderCobros from "@/components/Cobros/RenderCobros";
 import RenderFechas from "@/components/Fechas/RenderFechas";
-import GetAdministrativo from "@/services/GetAdministrativo";
+import '../../public/print.css';
 
 const CobroViewer = () => {
   const [logs, setLogs] = useState([]);

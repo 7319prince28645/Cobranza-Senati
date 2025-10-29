@@ -1,0 +1,7 @@
+/* print.css */
+@media print {
+  body {
+    font-family: Arial, sans-serif;
+
+  }
+}
