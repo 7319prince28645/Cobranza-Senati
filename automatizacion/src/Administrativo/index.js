@@ -3,9 +3,7 @@ const FetchReportes = require('./main');
 
 router.post('/reportes', async (req, res) => {
  try {
-    console.log("📦 Body recibido:", req.body);
     const { id, fechaInicio, fechaFin } = req.body;
-    console.log("🧩 Parámetros enviados a FetchReportes:", id, fechaInicio, fechaFin);
 
     const reportes = await FetchReportes(id, fechaInicio, fechaFin);
     console.log('✅ Reportes fetched:', reportes);
