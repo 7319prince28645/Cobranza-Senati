@@ -55,11 +55,28 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
   await page.fill('input[name="P9_FECHA_FIN"]', fechaFin).catch(() => {});
 
   // Ver calendario
-  await page.waitForSelector('a.t12Button:has-text("ver calendario")', { timeout: 10000 });
+  await page.waitForSelector('a.t12Button:has-text("ver calendario")', {
+    timeout: 10000,
+  });
   await page.click('a.t12Button:has-text("ver calendario")').catch(() => {});
   console.log("✅ Formulario enviado correctamente.");
 
   await page.waitForSelector("#dvContainer", { timeout: 4000 });
+
+  // 🔍 Extraer nombre e ID del instructor
+  const headerText = await page
+    .$eval("#R11762331375378722 td.t12Header", (el) => el.innerText.trim())
+    .catch(() => null);
+
+  let nombreInstructor = null;
+  let idInstructor = null;
+
+  if (headerText) {
+    const regexNombre = /-\s*(.*?)\s*desde/;
+    const regexCodigo = /Instructor\s+(\d+)/;
+    nombreInstructor = headerText.match(regexNombre)?.[1]?.trim() || null;
+    idInstructor = headerText.match(regexCodigo)?.[1]?.trim() || null;
+  }
 
   // 🗓️ Extraer mes actual
   let calendario = await extraerCalendario(page, fechaFin);
@@ -82,13 +99,28 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
 
   await browser.close();
 
-  // 🧩 Agrupar sesiones por día
-  const calendarioCompacto = agruparPorDia(calendario);
+  // 📆 Filtrar solo fechas dentro del rango exacto
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
+
+  const calendarioFiltrado = calendario.filter((s) => {
+    const [d, m, y] = s.dia.split("/").map(Number);
+    const fecha = new Date(y, m - 1, d);
+    return fecha >= inicio && fecha <= fin;
+  });
+
+  // 🧩 Agrupar sesiones por día solo del rango permitido
+  const calendarioCompacto = agruparPorDia(calendarioFiltrado);
 
   console.log("📋 Resultado final agrupado:");
   console.log(JSON.stringify(calendarioCompacto, null, 2));
 
-  return calendarioCompacto;
+  // ✅ Retornar todo junto
+  return {
+    id: idInstructor,
+    nombre: nombreInstructor,
+    calendarioCompacto,
+  };
 }
 
 // 🧠 Función auxiliar para procesar el calendario
@@ -102,7 +134,9 @@ async function extraerCalendario(page, fechaReferencia) {
   tablas.forEach((html) => {
     const $ = cheerio.load(html);
 
-    $("tr.formRegionHeader td.formRegionBody, tr.formRegionHeader td.formRegionBodyWE").each((j, celda) => {
+    $(
+      "tr.formRegionHeader td.formRegionBody, tr.formRegionHeader td.formRegionBodyWE"
+    ).each((j, celda) => {
       const diaTexto = $(celda).text().trim().split("\n")[0];
       const dia = obtenerFechaCompleta(diaTexto, fechaReferencia);
       const sesiones = [];
@@ -113,8 +147,10 @@ async function extraerCalendario(page, fechaReferencia) {
           const contenido = $(el).html().split("<br>");
           const curso = contenido[1]?.trim();
           const horarioYsalon = contenido[2]?.trim();
-          const [horario, aula] = horarioYsalon?.split("&gt;")?.map((s) => s.trim()) || [];
-          const [horarioInicio, horarioFin] = horario?.split("-").map((h) => h.trim()) || [];
+          const [horario, aula] =
+            horarioYsalon?.split("&gt;")?.map((s) => s.trim()) || [];
+          const [horarioInicio, horarioFin] =
+            horario?.split("-").map((h) => h.trim()) || [];
 
           sesiones.push({
             dia,
@@ -122,7 +158,10 @@ async function extraerCalendario(page, fechaReferencia) {
             aula,
             horarioInicio,
             horarioFin,
-            horasPedagogicas: calcularHorasPedagogicas(horarioInicio, horarioFin),
+            horasPedagogicas: calcularHorasPedagogicas(
+              horarioInicio,
+              horarioFin
+            ),
           });
         });
 
@@ -151,7 +190,8 @@ function agruparPorDia(sesiones) {
     agrupado[dia].cursos.add(s.curso);
 
     // actualiza el rango horario
-    if (s.horarioInicio < agrupado[dia].inicio) agrupado[dia].inicio = s.horarioInicio;
+    if (s.horarioInicio < agrupado[dia].inicio)
+      agrupado[dia].inicio = s.horarioInicio;
     if (s.horarioFin > agrupado[dia].fin) agrupado[dia].fin = s.horarioFin;
 
     agrupado[dia].totalHoras += s.horasPedagogicas;

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import GetAdministrativo from "@/services/GetAdministrativo";
 import html2pdf from "html2pdf.js";
+import LogoSenait from "../../assets/Senati.png";
 
 function RenderFechas() {
   const [id, setId] = useState("");
@@ -47,6 +48,8 @@ function RenderFechas() {
     html2pdf().set(opt).from(element).save();
   };
 
+  console.log("Resultados:", resultados);
+
   return (
     <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-6">
       <h2 className="text-2xl font-semibold text-center text-gray-800">
@@ -90,7 +93,7 @@ function RenderFechas() {
           {loading ? "⏳ Consultando..." : "🔍 Consultar"}
         </button>
 
-        {resultados?.data?.length > 0 && (
+        {resultados?.data?.calendarioCompacto?.length > 0 && (
           <>
             <button
               onClick={handleImprimir}
@@ -110,20 +113,37 @@ function RenderFechas() {
 
       {/* Contenido exportable */}
       <div ref={pdfRef}>
-        {resultados?.data?.length > 0 && (
+        {resultados?.data?.calendarioCompacto?.length > 0 && (
           <>
             {/* Cabecera del reporte */}
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold uppercase">
-                SENATI – CFP PUCALLPA
-              </h3>
-              <p>ID Instructor: <strong>{id}</strong></p>
-              <p>
-                Rango de fechas:{" "}
-                <strong>
-                  {fechaInicio} — {fechaFin}
-                </strong>
-              </p>
+            <div className="mb-6 space-y-4">
+              <h2 className="text-xl font-bold text-center">
+                Registro de Control de Asistencia del Personal JP
+              </h2>
+              <div className="flex">
+                <img src={LogoSenait} alt="Logo Senati" width={140} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 text-sm">
+                <div className="font-semibold uppercase">RUC:</div>
+                <div>20131376503</div>
+
+                <div className="font-semibold">C.F.P / GERENCIA:</div>
+                <div>CFP PUCALLPA</div>
+
+                <div className="font-semibold">Dirección:</div>
+                <div>AV. CENTENARIO KM. 4.500</div>
+
+                <div className="font-semibold">TRABAJADOR:</div>
+                <div>{resultados?.data?.nombre}</div>
+
+                <div className="font-semibold">ID:</div>
+                <div>{resultados?.data?.id}</div>
+
+                <div className="font-semibold">PUESTO:</div>
+                <div>INSTRUCTOR JP</div>
+              </div>
+              <hr className="my-4" />
             </div>
 
             {/* Tabla */}
@@ -138,23 +158,24 @@ function RenderFechas() {
                     <th className="p-2 border">Hora término</th>
                     <th className="p-2 border">Firma</th>
                     <th className="p-2 border">Total (horas pedagógicas)</th>
+                    <th className="p-2 border">Observaciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {resultados?.data?.map((diaObj, i) => (
-                      <tr key={`${i}`} className="text-center">
-                        <td className="border p-2">{diaObj.curso}</td>
-                        <td className="border p-2">{diaObj.dia}</td>
-                        <td className="border p-2">{diaObj.horarioInicio}</td>
-                        <td className="border p-2"></td>
-                        <td className="border p-2">{diaObj.horarioFin}</td>
-                        <td className="border p-2"></td>
-                        <td className="border p-2">
-                          {diaObj.totalMinutos ? `${diaObj.totalMinutos}` : "-"}
-                        </td>
-                      </tr>
-                    ))}
-                
+                  {resultados?.data?.calendarioCompacto?.map((diaObj, i) => (
+                    <tr key={`${i}`} className="text-center">
+                      <td className="border p-2">{diaObj?.cursos}</td>
+                      <td className="border p-2">{diaObj?.dia}</td>
+                      <td className="border p-2">{diaObj?.inicio}</td>
+                      <td className="border p-2"></td>
+                      <td className="border p-2">{diaObj?.fin}</td>
+                      <td className="border p-2"></td>
+                      <td className="border p-2">
+                        {diaObj?.totalHoras ? `${diaObj?.totalHoras}` : "-"}
+                      </td>
+                      <td className="border p-2"></td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -170,12 +191,20 @@ function RenderFechas() {
                 <p>Jefe del Centro</p>
               </div>
             </div>
+            <div>
+              <p className="text-xs text-gray-500 my-4">
+                Generado el {new Date().toLocaleDateString()} a las{" "}
+                {new Date().toLocaleTimeString()}
+              </p>
+            </div>
           </>
         )}
       </div>
 
       {/* Estado de carga */}
-      {loading && <p className="text-center text-gray-500">Cargando datos...</p>}
+      {loading && (
+        <p className="text-center text-gray-500">Cargando datos...</p>
+      )}
       {!loading && resultados.length === 0 && (
         <p className="text-center text-gray-500">No hay datos para mostrar.</p>
       )}
