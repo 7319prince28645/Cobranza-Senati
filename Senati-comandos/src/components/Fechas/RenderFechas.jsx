@@ -283,20 +283,24 @@ function RenderFechas() {
 
                   return (
                     <tr key={i} className={`text-center ${colorFondo}`}>
-                      <td className="border p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
+                      <td className="border border-gray-300 p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
                         {diaObj?.cursos}
                       </td>
-                      <td className="border p-1 align-middle">{diaObj?.dia}</td>
-                      <td className="border p-1 align-middle">
+                      <td className="border border-gray-300 p-1 align-middle">
+                        {diaObj?.dia}
+                      </td>
+                      <td className="border border-gray-300 p-1 align-middle">
                         {diaObj?.inicio}
                       </td>
-                      <td className="border p-1 align-middle bg-"></td>
-                      <td className="border p-1 align-middle">{diaObj?.fin}</td>
-                      <td className="border p-1 align-middle"></td>
-                      <td className="border p-1 align-middle">
+                      <td className="border border-gray-300 p-1 align-middle"></td>
+                      <td className="border border-gray-300 p-1 align-middle">
+                        {diaObj?.fin}
+                      </td>
+                      <td className="border border-gray-300 p-1 align-middle"></td>
+                      <td className="border border-gray-300 p-1 align-middle">
                         {diaObj?.totalHoras || "-"}
                       </td>
-                      <td className="border p-1 align-middle"></td>
+                      <td className="border border-gray-300 p-1 align-middle"></td>
                     </tr>
                   );
                 })}
