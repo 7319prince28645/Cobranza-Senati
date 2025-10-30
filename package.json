@@ -2,7 +2,10 @@
   "name": "mi-proyecto",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix automatizacion\" \"npm run dev --prefix Senati-Comandos\""
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "npm run dev --prefix automatizacion",
+    "dev:client": "npm run dev:host --prefix Senati-Comandos",
+    "dev:host": "vite --host"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

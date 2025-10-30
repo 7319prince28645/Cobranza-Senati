@@ -4,6 +4,7 @@ import GetAdministrativo from "@/services/GetAdministrativo";
 import html2pdf from "html2pdf.js";
 import LogoSenait from "../../assets/Senati.png";
 import "/public/print.css"; // Asegúrate de que esta ruta sea válida
+import * as XLSX from "xlsx";
 
 function RenderFechas() {
   const [id, setId] = useState("");
@@ -33,8 +34,47 @@ function RenderFechas() {
     }
   };
 
-  const handleImprimir = () => {
-    window.print();
+  const handleExportarExcel = () => {
+    const calendario = resultados?.data?.calendarioCompacto;
+    if (!calendario || calendario.length === 0) return;
+
+    // Encabezado institucional
+    const encabezado = [
+      ["REGISTRO DE CONTROL DE ASISTENCIA DEL PERSONAL POR HORAS"],
+      [],
+      ["RUC:", "20131376503"],
+      ["C.F.P./ GERENCIA:", "CFP PUCALLPA"],
+      ["Dirección:", "Av. Centenario Km. 4.500"],
+      ["MES:", ""],
+      ["TRABAJADOR(A):", resultados?.data?.nombre || ""],
+      ["DNI:", ""],
+      ["PUESTO:", "INSTRUCTOR JP"],
+      [],
+      [
+        "CURSO",
+        "FECHA",
+        "HORA INICIO",
+        "FIRMA",
+        "TOTAL HORAS",
+        "FIRMA",
+        "OBSERVACIONES",
+      ],
+    ];
+
+    // Datos del calendario
+    const filas = calendario.map((dia) => [
+      dia?.cursos,
+      dia?.diaFin || dia?.dia, // si tienes fecha fin separada
+      "", // firma vacía
+      dia?.totalHoras || "0",
+    ]);
+
+    const hoja = XLSX.utils.aoa_to_sheet([...encabezado, ...filas]);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Asistencia");
+
+    const nombreArchivo = `asistencia_formato_institucional_${id}_${fechaInicio}_${fechaFin}.xlsx`;
+    XLSX.writeFile(libro, nombreArchivo);
   };
 
   const handleDescargarPDF = () => {
@@ -63,8 +103,22 @@ function RenderFechas() {
     html2pdf().set(opt).from(element).save();
   };
 
+  const calendarioOrdenadoDesc = (resultados?.data?.calendarioCompacto || [])
+    .slice() // copia para no mutar el original
+    .sort((a, b) => {
+      const parse = (d) => {
+        if (!d) return new Date(0);
+        const [dd, mm, yyyy] = d.split("/").map(Number);
+        return new Date(yyyy, mm - 1, dd);
+      };
+      return parse(a.dia) - parse(b.dia); // b - a => mayor a menor
+    });
+
+  console.log("🚀 Resultados:", resultados);
+  console.log("Calendario", calendarioOrdenadoDesc);
+
   return (
-    <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-md p-8 space-y-6">
+    <div className="max-w-6xl mx-auto bg-white rounded-2xl space-y-6">
       <h2 className="text-2xl font-semibold text-center text-gray-800">
         📋 Registro de Control de Asistencia del Personal por Curso
       </h2>
@@ -109,11 +163,12 @@ function RenderFechas() {
         {resultados?.data?.calendarioCompacto?.length > 0 && (
           <>
             <button
-              onClick={handleImprimir}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium"
+              onClick={handleExportarExcel}
+              className="px-6 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-xl font-medium"
             >
-              🖨️ Imprimir
+              📊 Exportar Excel
             </button>
+
             <button
               onClick={handleDescargarPDF}
               className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium"
@@ -132,44 +187,51 @@ function RenderFechas() {
       >
         {resultados?.data?.calendarioCompacto?.length > 0 && (
           <>
-            <div className="text-center mb-6">
+            <div className="relative flex items-center">
               <img
                 src={LogoSenait}
                 alt="Logo Senati"
-                width={120}
-                className="mx-auto mb-2"
+                width={200}
+                className="mr-4"
               />
               <h1 className="text-xl font-bold uppercase">
-                Registro de Control de Asistencia del Personal JP
+                Registro de Control de Asistencia del Personal Por HORAS
               </h1>
-              <p className="text-xs text-gray-600">
-                Centro de Formación Profesional - CFP Pucallpa
-              </p>
-              <hr className="my-4 border-gray-400" />
             </div>
+            <div className="grid grid-cols-2 mb-6 text-sm">
+              <div className="pt-4">
+                <div>
+                  <span className="font-semibold">RUC:</span> 20131376503
+                </div>
+                <div>
+                  <span className="font-semibold">C.F.P./ GERENCIA:</span> CFP
+                  PUCALLPA
+                </div>
 
-            <div className="grid grid-cols-2 gap-y-2 gap-x-6 mb-6 text-sm">
-              <div>
-                <span className="font-semibold">RUC:</span> 20131376503
+                <div>
+                  <span className="font-semibold">Dirección:</span> Av.
+                  Centenario Km. 4.500
+                </div>
+                <div className="my-4" />
+                <div>
+                  <span className="font-semibold">TRABAJADOR:</span>{" "}
+                  {resultados?.data?.nombre}
+                </div>
+                <div>
+                  <span className="font-semibold">ID:</span>{" "}
+                  {resultados?.data?.id || "------------------"}
+                </div>
+
+                <div>
+                  <span className="font-semibold">PUESTO:</span> INSTRUCTOR JP
+                </div>
               </div>
-               <div>
-                <span className="font-semibold">ID:</span>{" "}
-                {resultados?.data?.id}
-              </div>
-              <div>
-                <span className="font-semibold">Dirección:</span> Av. Centenario
-                Km. 4.500
-              </div>
-              <div>
-                <span className="font-semibold">Trabajador:</span>{" "}
-                {resultados?.data?.nombre}
-              </div>
-              <div>
-                <span className="font-semibold">Gerencia:</span> CFP PUCALLPA
-              </div>
-             
-              <div>
-                <span className="font-semibold">Puesto:</span> INSTRUCTOR JP
+              <div className="flex flex-col justify-around">
+                <p>MES:</p>
+                <div>
+                  {" "}
+                  <span>HORARIO:</span>
+                </div>
               </div>
             </div>
 
@@ -193,7 +255,7 @@ function RenderFechas() {
                     Firma
                   </th>
                   <th className="border p-1 font-semibold align-middle">
-                    Total Firmas
+                    Total
                   </th>
                   <th className="border p-1 font-semibold align-middle">
                     Observaciones
@@ -201,42 +263,45 @@ function RenderFechas() {
                 </tr>
               </thead>
               <tbody>
-                {resultados?.data?.calendarioCompacto?.map((diaObj, i) => (
-                  <tr key={i} className="text-center">
-                    <td className="border p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
-                      {diaObj?.cursos}
-                    </td>
-                    <td className="border p-1 align-middle">{diaObj?.dia}</td>
-                    <td className="border p-1 align-middle">
-                      {diaObj?.inicio}
-                    </td>
-                    <td className="border p-1 align-middle"></td>
-                    <td className="border p-1 align-middle">{diaObj?.fin}</td>
-                    <td className="border p-1 align-middle"></td>
-                    <td className="border p-1 align-middle">
-                      {diaObj?.totalHoras || "-"}
-                    </td>
-                    <td className="border p-1 align-middle"></td>
-                  </tr>
-                ))}
+                {calendarioOrdenadoDesc?.map((diaObj, i) => {
+                  const diaAnterior = calendarioOrdenadoDesc[i - 1]?.dia;
+                  const esNuevoDia = diaObj.dia !== diaAnterior;
+
+                  // Variable estática para alternar colores por grupo de día
+                  // (se mantiene fuera del renderizado de filas)
+                  if (i === 0) {
+                    // Primer elemento
+                    window.__colorFlag = true;
+                  } else if (esNuevoDia) {
+                    // Cambia el color cuando cambia el día
+                    window.__colorFlag = !window.__colorFlag;
+                  }
+
+                  const colorFondo = window.__colorFlag
+                    ? "bg-slate-200"
+                    : "bg-white";
+
+                  return (
+                    <tr key={i} className={`text-center ${colorFondo}`}>
+                      <td className="border p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
+                        {diaObj?.cursos}
+                      </td>
+                      <td className="border p-1 align-middle">{diaObj?.dia}</td>
+                      <td className="border p-1 align-middle">
+                        {diaObj?.inicio}
+                      </td>
+                      <td className="border p-1 align-middle bg-"></td>
+                      <td className="border p-1 align-middle">{diaObj?.fin}</td>
+                      <td className="border p-1 align-middle"></td>
+                      <td className="border p-1 align-middle">
+                        {diaObj?.totalHoras || "-"}
+                      </td>
+                      <td className="border p-1 align-middle"></td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-
-            <div className="flex justify-between mt-12 px-6 text-center text-sm">
-              <div>
-                <p className="mb-1">______________________________</p>
-                <p>Instructor</p>
-              </div>
-              <div>
-                <p className="mb-1">______________________________</p>
-                <p>Jefe del Centro</p>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-500 mt-6 text-right">
-              Generado el {new Date().toLocaleDateString()} a las{" "}
-              {new Date().toLocaleTimeString()}
-            </p>
           </>
         )}
       </div>

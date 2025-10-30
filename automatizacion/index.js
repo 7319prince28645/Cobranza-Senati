@@ -4,7 +4,8 @@ const main = require("./src/CobrosCIS/main");
 const FetchReportesAdministrativo = require("./src/Administrativo");
 
 const app = express();
-const port = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || "0.0.0.0";
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,6 +47,6 @@ app.get("/automatizacion-stream", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Server is running at http://localhost:${port}`);
+app.listen(PORT, HOST, () => {
+  console.log(`✅ Server running at http://${HOST}:${PORT}`);
 });
