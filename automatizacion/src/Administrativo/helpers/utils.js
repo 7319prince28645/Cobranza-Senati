@@ -1,11 +1,18 @@
 // helpers/utils.js
 function normalizeText(str = "") {
-  return str.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
+  return str
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 }
 
 function GeneralizarCursos(cursos) {
   if (!cursos || typeof cursos !== "string") return "SIN_CURSO";
-  let s = cursos.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim();
+  let s = cursos
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   s = s.replace(/\s*\([^)]*\)\s*/g, " ");
   s = s
     .replace(/\s*\/\s*/g, " / ")
@@ -29,7 +36,8 @@ function calcularMinutos(inicio, fin) {
 
 function calcularHorasPedagogicas(inicio, fin) {
   const minutos = calcularMinutos(inicio, fin);
-  return minutos > 0 ? Math.floor(minutos / 45) : 0;
+  const horas = minutos > 0 ? minutos / 45 : 0;
+  return Math.round(horas * 10000) / 10000; // redondea a 4 decimales sin convertir a string
 }
 
 function obtenerFechaCompleta(dia, fechaReferencia) {

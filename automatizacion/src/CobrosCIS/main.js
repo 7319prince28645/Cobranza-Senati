@@ -26,7 +26,7 @@ async function main(onProgress = () => {}) {
       resultados.push({ id, ...resultado });
 
       // 🚀 Mandamos resultado inmediato al front
-    }
+    } 
     onProgress({ hoja: nombreHoja, resultados });
   }
 

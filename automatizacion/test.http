@@ -3,7 +3,7 @@ POST http://localhost:3000/administrativo/reportes
 Content-Type: application/json
 
 {
-  "id": "000627184",
+  "id": "001706762",
   "fechaInicio": "2025-10-01",
-  "fechaFin": "2025-10-30"
+  "fechaFin": "2025-11-30"
 }

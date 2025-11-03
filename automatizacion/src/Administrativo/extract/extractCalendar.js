@@ -1,6 +1,9 @@
 // extract/extractCalendar.js
 const cheerio = require("cheerio");
-const { calcularHorasPedagogicas, obtenerFechaCompleta } = require("../helpers/utils");
+const {
+  calcularHorasPedagogicas,
+  obtenerFechaCompleta,
+} = require("../helpers/utils");
 
 async function extraerCalendario(page, fechaReferencia) {
   const tablas = await page.$$eval("table.t12StandardCalendar", (els) =>
@@ -10,11 +13,11 @@ async function extraerCalendario(page, fechaReferencia) {
 
   tablas.forEach((html) => {
     const $ = cheerio.load(html);
-    $(
-      "tr.formRegionHeader td.formRegionBody, tr.formRegionHeader td.formRegionBodyWE"
-    ).each((j, celda) => {
+    $("tr.formRegionHeader td[class*='formRegionBody']").each((j, celda) => {
       const diaTexto = $(celda).text().trim().split("\n")[0];
-      const dia = obtenerFechaCompleta(diaTexto, fechaReferencia);
+      const diaNumerico = parseInt(diaTexto);
+      if (isNaN(diaNumerico)) return; // salta celdas no válidas
+      const dia = obtenerFechaCompleta(diaNumerico, fechaReferencia);
 
       $(celda)
         .find("a font.descripcion")
@@ -22,8 +25,10 @@ async function extraerCalendario(page, fechaReferencia) {
           const contenido = $(el).html().split("<br>");
           const cursoRaw = (contenido[1] || "").trim();
           const horarioYsalon = (contenido[2] || "").trim();
-          const [horario, aula] = horarioYsalon?.split("&gt;")?.map((s) => s.trim()) || [];
-          const [horarioInicio, horarioFin] = horario?.split("-").map((h) => h.trim()) || [];
+          const [horario, aula] =
+            horarioYsalon?.split("&gt;")?.map((s) => s.trim()) || [];
+          const [horarioInicio, horarioFin] =
+            horario?.split("-").map((h) => h.trim()) || [];
 
           calendario.push({
             dia,
@@ -31,7 +36,10 @@ async function extraerCalendario(page, fechaReferencia) {
             aula,
             horarioInicio: horarioInicio || null,
             horarioFin: horarioFin || null,
-            horasPedagogicas: calcularHorasPedagogicas(horarioInicio, horarioFin),
+            horasPedagogicas: calcularHorasPedagogicas(
+              horarioInicio,
+              horarioFin
+            ),
           });
         });
     });

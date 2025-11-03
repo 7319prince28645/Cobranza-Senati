@@ -2,9 +2,9 @@
 import React, { useState, useRef } from "react";
 import GetAdministrativo from "@/services/GetAdministrativo";
 import html2pdf from "html2pdf.js";
-import LogoSenait from "../../assets/Senati.png";
 import "/public/print.css"; // Asegúrate de que esta ruta sea válida
 import * as XLSX from "xlsx";
+import LogoSenati from "../../assets/Senati.png";
 
 function RenderFechas() {
   const [id, setId] = useState("");
@@ -189,7 +189,7 @@ function RenderFechas() {
           <>
             <div className="relative flex items-center">
               <img
-                src={LogoSenait}
+                src={LogoSenati}
                 alt="Logo Senati"
                 width={200}
                 className="mr-4"
@@ -298,7 +298,7 @@ function RenderFechas() {
                       </td>
                       <td className="border border-gray-300 p-1 align-middle"></td>
                       <td className="border border-gray-300 p-1 align-middle">
-                        {diaObj?.totalHoras || "-"}
+                        {diaObj?.totalHoras ? Number(diaObj.totalHoras.toFixed(4)) : "-"}
                       </td>
                       <td className="border border-gray-300 p-1 align-middle"></td>
                     </tr>

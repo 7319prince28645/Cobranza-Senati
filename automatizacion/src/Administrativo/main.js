@@ -36,19 +36,19 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
     (mesFin.getFullYear() - mesInicio.getFullYear()) * 12 +
     (mesFin.getMonth() - mesInicio.getMonth());
 
+
   for (let i = 0; i < diffMeses; i++) {
     const botonAnterior = await page.$('a.t12Button:has-text("Anterior")');
     if (!botonAnterior) break;
     await botonAnterior.click();
-    await page.waitForSelector("#dvContainer", { timeout: 4000 });
+    await page.waitForSelector("#dvContainer", { timeout: 15000 });
     const mesReferencia = new Date(mesFin);
     mesReferencia.setMonth(mesFin.getMonth() - (i + 1));
     const calendarioMes = await extraerCalendario(page, mesReferencia.toISOString().split("T")[0]);
     calendario = [...calendarioMes, ...calendario];
   }
 
-  await browser.close();
-
+  
   const inicio = new Date(fechaInicio);
   const fin = new Date(fechaFin);
   const calendarioFiltrado = calendario.filter((s) => {
@@ -56,15 +56,18 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
     const fecha = new Date(y, m - 1, d);
     return fecha >= inicio && fecha <= fin;
   });
-
+  
   const calendarioCompacto = agruparPorDia(calendarioFiltrado);
   const resumenPorCurso = generarResumenPorCursoConHorarioFrecuente(calendarioFiltrado);
-
+  
+  await browser.close();
   return {
     id: idInstructor,
     nombre: nombreInstructor,
     calendarioCompacto,
     resumenPorCurso,
+    diffMeses,
+    calendario
   };
 }
 
