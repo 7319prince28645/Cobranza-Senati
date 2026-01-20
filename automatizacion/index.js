@@ -34,9 +34,13 @@ app.get("/automatizacion-stream", async (req, res) => {
   }, 15000);
 
   try {
+    // 🎯 Obtener el año desde query params
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    
     await main((msg) => {
       res.write(`data: ${JSON.stringify({ msg })}\n\n`);
-    });
+    }, year); // 👈 Pasar el año a main
+    
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (error) {

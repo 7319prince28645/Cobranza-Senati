@@ -4,7 +4,7 @@ const LeerTodasLasHojas = require("./leerIdsDeColumnaD");
 const { navigateToOtherPage } = require("./NavigateOtherPage");
 const { RecorrerAlumnos } = require("./RecorrerAlumnos");
 
-async function main(onProgress = () => {}) {
+async function main(onProgress = () => {}, year = new Date().getFullYear()) {
   // 🚀 Lanzamos Playwright en modo headless
   const browser = await chromium.launch({
     headless: false, // 👈 muestra la ventana
@@ -22,7 +22,7 @@ async function main(onProgress = () => {}) {
   for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
     const resultados = [];
     for (const id of ids) {
-      const [resultado] = await RecorrerAlumnos(page, id, nombreHoja);
+      const [resultado] = await RecorrerAlumnos(page, id, nombreHoja, year); // 👈 Pasar el año
       resultados.push({ id, ...resultado });
 
       // 🚀 Mandamos resultado inmediato al front

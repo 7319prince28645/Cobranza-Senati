@@ -9,34 +9,100 @@ const CobroViewer = () => {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [vistaActiva, setVistaActiva] = useState(null); // 👈 cuál componente mostrar
+  const [showYearModal, setShowYearModal] = useState(false);
+  const [year, setYear] = useState(new Date().getFullYear().toString());
 
   const handleProceso = (tipo) => {
-    setVistaActiva(tipo);
-    setLogs([]); // limpia logs anteriores
-
     if (tipo === "cobros") {
-      setLoading(true);
-      const es = ImportDataStream(
-        (data) => {
-          if (data?.msg?.hoja) {
-            setLogs((prev) => [...prev, data]);
-          } else {
-            console.log("🔹 Mensaje suelto:", data);
-          }
-        },
-        () => {
-          console.log("✅ Proceso completado");
-          setLoading(false);
-        }
-      );
-
-      return () => es.close();
+      // Mostrar modal para solicitar el año
+      setShowYearModal(true);
+    } else {
+      setVistaActiva(tipo);
+      setLogs([]);
     }
-    
+  };
+
+  const iniciarProcesoCobros = () => {
+    // Validar año
+    const yearNum = parseInt(year, 10);
+    if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
+      alert("⚠️ Por favor ingresa un año válido (ej: 2026)");
+      return;
+    }
+
+    setShowYearModal(false);
+    setVistaActiva("cobros");
+    setLogs([]);
+    setLoading(true);
+
+    const es = ImportDataStream(
+      (data) => {
+        if (data?.msg?.hoja) {
+          setLogs((prev) => [...prev, data]);
+        } else {
+          console.log("🔹 Mensaje suelto:", data);
+        }
+      },
+      () => {
+        console.log("✅ Proceso completado");
+        setLoading(false);
+      },
+      yearNum // 👈 Enviar el año al backend
+    );
+
+    return () => es.close();
   };
 
   return (
     <div className="p-6 space-y-6">
+      {/* 🎯 Modal para ingresar año */}
+      {showYearModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md mx-4 animate-in fade-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">
+              📅 Seleccionar Año de Análisis
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Ingresa el año para analizar los periodos correspondientes
+            </p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Año:
+              </label>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                placeholder="Ej: 2026"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg font-semibold text-center"
+                min="2000"
+                max="2100"
+                autoFocus
+              />
+              <p className="text-xs text-gray-500 mt-2">
+                Se analizarán los periodos: {year}02 y {year}12
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowYearModal(false)}
+                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={iniciarProcesoCobros}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition shadow-lg shadow-blue-500/30"
+              >
+                Iniciar Análisis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 🧭 Título */}
       <h1 className="text-3xl font-bold text-center text-gray-800">
         ⚡ Herramientas APEX
