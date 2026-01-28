@@ -1,14 +1,17 @@
-const { chromium } = require("playwright");
+const { chromium } = require("playwright-extra");
+const stealth = require("puppeteer-extra-plugin-stealth")();
 const login = require("./login");
 const LeerTodasLasHojas = require("./leerIdsDeColumnaD");
 const { navigateToOtherPage } = require("./NavigateOtherPage");
 const { RecorrerAlumnos } = require("./RecorrerAlumnos");
 
+// Aplicar el plugin de sigilo
+chromium.use(stealth);
+
 async function main(onProgress = () => {}, year = new Date().getFullYear()) {
-  // 🚀 Lanzamos Playwright en modo headless
+  // 🚀 Lanzamos Playwright con sigilo
   const browser = await chromium.launch({
-    headless: false, // 👈 muestra la ventana
-    slowMo: 30, // 👈 retrasa cada acción (100ms) para que veas qué hace
+    headless: false, 
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
   const page = await browser.newPage();
@@ -16,8 +19,16 @@ async function main(onProgress = () => {}, year = new Date().getFullYear()) {
   await login(page, "000196942", "040766");
 
   const hojasConIds = await LeerTodasLasHojas();
+  
+  if (Object.keys(hojasConIds).length === 0) {
+    console.warn("⚠️ No se encontraron hojas o IDs para procesar.");
+    onProgress("⚠️ No se encontraron datos para procesar.");
+    await browser.close();
+    return;
+  }
 
-  await navigateToOtherPage(page, hojasConIds);
+  // Navegar a la página de búsqueda una sola vez
+  await navigateToOtherPage(page, "Inicio del Proceso");
 
   for (const [nombreHoja, ids] of Object.entries(hojasConIds)) {
     const resultados = [];

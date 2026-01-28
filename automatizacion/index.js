@@ -10,7 +10,6 @@ const HOST = process.env.HOST || "0.0.0.0";
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 app.use(cors({
   origin: "*",
   methods: ["GET", "POST"],
@@ -22,6 +21,7 @@ app.use("/administrativo", FetchReportesAdministrativo);
 
 // ✅ Endpoint con streaming SSE
 app.get("/automatizacion-stream", async (req, res) => {
+  console.log("📡 Nueva solicitud de stream recibida (CÓDIGO ACTUALIZADO V2)");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -34,16 +34,16 @@ app.get("/automatizacion-stream", async (req, res) => {
   }, 15000);
 
   try {
-    // 🎯 Obtener el año desde query params
     const year = parseInt(req.query.year, 10) || new Date().getFullYear();
     
     await main((msg) => {
       res.write(`data: ${JSON.stringify({ msg })}\n\n`);
-    }, year); // 👈 Pasar el año a main
+    }, year);
     
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
     res.end();
   } catch (error) {
+    console.error("❌ Error en stream:", error.message);
     res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
     res.end();
   } finally {
@@ -53,4 +53,5 @@ app.get("/automatizacion-stream", async (req, res) => {
 
 app.listen(PORT, HOST, () => {
   console.log(`✅ Server running at http://${HOST}:${PORT}`);
+  console.log(`🚀 Servidor listo y actualizado: ${new Date().toLocaleString()}`);
 });

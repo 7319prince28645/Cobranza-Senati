@@ -5,7 +5,7 @@ async function main(onProgress = () => {}) {
   const browser = await chromium.launchPersistentContext(
     "./carpetaPerfil2", // 👈 aquí se guarda el perfil del navegador
     {
-      headless: false,
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     }
   );

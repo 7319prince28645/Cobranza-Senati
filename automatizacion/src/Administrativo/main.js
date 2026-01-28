@@ -8,7 +8,7 @@ const { openReportPage, submitFormAndShowCalendar } = require("./helpers/navigat
 
 async function FetchReportes(id, fechaInicio, fechaFin) {
   const browser = await chromium.launch({
-    headless: false,
+    headless: true,
     slowMo: 50,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
@@ -72,3 +72,4 @@ async function FetchReportes(id, fechaInicio, fechaFin) {
 }
 
 module.exports = FetchReportes;
+

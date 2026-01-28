@@ -22,6 +22,8 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
 
     let datosEncontrados = null;
     let periodoEncontrado = null;
+    let datosRespaldo = null;
+    let periodoRespaldo = null;
     let nombreAlumno = null;
     let codigoPago = null;
 
@@ -38,11 +40,11 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
         
         // --- Interacción con la página ---
         const termInput = page.locator("input#P3_TERM_CODE");
-        await termInput.waitFor({ state: "visible", timeout: 10000 });
+        await termInput.waitFor({ state: "attached", timeout: 15000 });
         await termInput.fill(termCode);
 
         const idInput = page.locator("input#P3_IDS");
-        await idInput.waitFor({ state: "visible", timeout: 10000 });
+        await idInput.waitFor({ state: "attached", timeout: 15000 });
         await idInput.fill(String(id)); // Usar String() en lugar de toString()
 
         // Click en botón y esperar tabla de resultados
@@ -53,7 +55,7 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
           page
             .locator("table tbody tr")
             .first()
-            .waitFor({ state: "visible", timeout: 15000 }),
+            .waitFor({ state: "attached", timeout: 20000 }),
         ]);
 
         // Esperar un poco para que cargue completamente
@@ -128,6 +130,12 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
           return result;
         }, nrcEsperado);
 
+        // 💾 Guardar como respaldo por si no encontramos el exacto
+        if (datos.length > 0) {
+          datosRespaldo = datos;
+          periodoRespaldo = termCode;
+        }
+
         // 🎯 Verificar si encontramos el NRC esperado en este periodo
         const encontrado = datos.find(
           (item) => parseInt(item.nrc, 10) === nrcEsperado
@@ -147,6 +155,13 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
         // Continuar con el siguiente periodo
         continue;
       }
+    }
+
+    // 🔄 Si no encontramos el exacto, usamos el respaldo (Doble Verificación)
+    if (!datosEncontrados && datosRespaldo) {
+      console.log(`  ⚠️ Usando datos de respaldo del periodo ${periodoRespaldo}`);
+      datosEncontrados = datosRespaldo;
+      periodoEncontrado = periodoRespaldo;
     }
 
     // 📊 Evaluar resultados finales

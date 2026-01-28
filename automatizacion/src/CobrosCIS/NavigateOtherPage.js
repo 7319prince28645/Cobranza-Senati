@@ -10,32 +10,38 @@ async function navigateToOtherPage(page, nombreHoja, retries = 3) {
 
   for (let intento = 1; intento <= retries; intento++) {
     try {
-      await page.waitForSelector("td.t12Header", { timeout: 8000 });
+      console.log(`⏳ Esperando selector td.t12Header (Intento ${intento})...`);
+      await page.waitForSelector("td.t12Header", { timeout: 15000 });
 
       // ✅ Si encontró el header, buscamos los enlaces
+      console.log("🔍 Buscando enlace 'Visualización de cronogramas de pagos'...");
       const enlaces = await page.$$eval("a", (anchors) =>
         anchors
           .filter((a) =>
-            a.textContent?.includes("Visualización de cronogramas de pagos")
+            a.textContent?.toLowerCase().includes("visualización de cronogramas de pagos")
           )
           .map((a) => a.href)
       );
 
       if (enlaces.length > 0) {
         console.log("✅ Enlace encontrado, navegando...");
-        await page.goto(enlaces[0], { waitUntil: "domcontentloaded" });
+        await page.goto(enlaces[0], { waitUntil: "domcontentloaded", timeout: 30000 });
+        
+        // Esperar a que cargue el formulario de búsqueda
+        await page.waitForSelector("input#P3_IDS", { timeout: 15000 });
+        console.log("✅ Página de búsqueda cargada correctamente.");
         return;
       } else {
-        throw new Error("No encontró el link esperado");
+        throw new Error("No encontró el link esperado en la página");
       }
     } catch (err) {
-      console.warn(`⚠️ Intento ${intento}: ${err.message}`);
+      console.warn(`⚠️ Intento ${intento} fallido: ${err.message}`);
       if (intento === retries) {
-        console.error("❌ No se pudo cargar la página tras varios F5");
-        return;
+        console.error("❌ No se pudo cargar la página tras varios intentos");
+        throw new Error("Error de navegación persistente en APEX");
       }
-      console.log("🔄 Forzando F5 (reload)...");
-      await page.reload({ waitUntil: "domcontentloaded" });
+      console.log("🔄 Reintentando navegación...");
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
     }
   }
 }

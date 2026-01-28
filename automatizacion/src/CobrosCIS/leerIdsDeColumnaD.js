@@ -42,7 +42,10 @@ async function LeerTodasLasHojas() {
     res.data.valueRanges.forEach((rangeObj, idx) => {
       const title = sheetTitles[idx];
       const valores = rangeObj.values || [];
-      resultados[title] = valores.map((row) => row[0]);
+      // Filtrar IDs vacíos o undefined
+      resultados[title] = valores
+        .map((row) => row[0])
+        .filter((id) => id && id.toString().trim() !== "");
     });
 
     return resultados;
