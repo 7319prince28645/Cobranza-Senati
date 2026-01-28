@@ -133,97 +133,104 @@ function RenderCobros({ logs, loading }) {
       }
     }
 
-    // Limpieza de filas vacías y filtrado de retiros
+    // Siempre eliminar filas de retiro de la imagen (dato interno, no para alumnos)
     const filas = Array.from(clone.querySelectorAll("tbody tr"));
-    let ultimaFilaConDatos = -1;
-    
-    filas.forEach((tr, idx) => {
+    filas.forEach((tr) => {
       const txt = tr.innerText.toLowerCase();
       const esRetiro = txt.includes("retiro");
-      
-      // Si el usuario NO quiere incluir retiros, eliminamos la fila del clon
-      if (!incluirRetiro[i] && esRetiro) {
+      if (esRetiro) {
         tr.remove();
-        return;
       }
-
-      const tieneNRC = tr.querySelector("td:nth-child(4)")?.innerText.trim();
-      if (tieneNRC && tieneNRC !== "-") ultimaFilaConDatos = idx;
     });
 
-    // Resumen para la foto (basado en lo que quedó en el clon)
-    let c = 0, p = 0, r = 0;
+    // Resumen para la foto - Solo mostrar Pagados y Pendientes (sin Retiros)
+    let c = 0, p = 0;
     clone.querySelectorAll("tbody tr").forEach(tr => {
       const txt = tr.innerText.toLowerCase();
-      if (txt.includes("retiro")) r++;
-      else if (txt.includes("cancelada") || txt.includes("inscrito")) c++;
+      if (txt.includes("cancelada") || txt.includes("inscrito") || txt.includes("pagado")) c++;
       else p++;
     });
 
     const wrapper = document.createElement("div");
-    wrapper.className = "p-12 bg-white w-[1200px] rounded-[48px] font-sans fixed -top-[9999px]";
-    wrapper.style.background = "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)";
+    wrapper.className = "font-sans";
+    wrapper.style.cssText = `
+      padding: 48px;
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+      width: 1000px;
+      border-radius: 32px;
+      position: fixed;
+      top: -9999px;
+      left: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    `;
     
     wrapper.innerHTML = `
-      <div style="margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #f1f5f9; padding-bottom: 32px;">
+      <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #e2e8f0; padding-bottom: 24px;">
         <div>
-          <h2 style="font-size: 54px; font-weight: 900; color: #0f172a; margin: 0; letter-spacing: -0.03em;">${nombreHoja}</h2>
-          <p style="font-size: 24px; color: #64748b; font-weight: 700; margin-top: 8px;">Reporte de Gestión Académica • SENATI</p>
+          <h2 style="font-size: 42px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">${nombreHoja}</h2>
+          <p style="font-size: 18px; color: #64748b; font-weight: 600; margin-top: 6px;">Reporte de Pagos • SENATI</p>
         </div>
         <div style="text-align: right;">
-          <p style="font-size: 24px; font-weight: 800; color: #3b82f6; background: #eff6ff; padding: 12px 24px; border-radius: 20px; display: inline-block;">${fechaActual}</p>
+          <p style="font-size: 18px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 10px 20px; border-radius: 16px; display: inline-block;">${fechaActual}</p>
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 48px;">
-        <div style="background: #ecfdf5; padding: 32px; border-radius: 32px; border: 3px solid #10b98130;">
-          <p style="font-size: 18px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.12em;">✅ Pagados</p>
-          <p style="font-size: 72px; font-weight: 900; color: #065f46; margin-top: 10px; line-height: 1;">${c}</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px;">
+        <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 24px; border-radius: 20px; border: 2px solid #10b98140;">
+          <p style="font-size: 14px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">✅ Pagados</p>
+          <p style="font-size: 56px; font-weight: 800; color: #065f46; margin: 8px 0 0 0; line-height: 1;">${c}</p>
         </div>
-        <div style="background: #fff1f2; padding: 32px; border-radius: 32px; border: 3px solid #f43f5e30;">
-          <p style="font-size: 18px; font-weight: 800; color: #e11d48; text-transform: uppercase; letter-spacing: 0.12em;">⚠️ Pendientes</p>
-          <p style="font-size: 72px; font-weight: 900; color: #9f1239; margin-top: 10px; line-height: 1;">${p}</p>
-        </div>
-        <div style="background: #fffbeb; padding: 32px; border-radius: 32px; border: 3px solid #f59e0b30; ${r === 0 ? 'opacity: 0.3;' : ''}">
-          <p style="font-size: 18px; font-weight: 800; color: #d97706; text-transform: uppercase; letter-spacing: 0.12em;">🚨 Retiro</p>
-          <p style="font-size: 72px; font-weight: 900; color: #92400e; margin-top: 10px; line-height: 1;">${r}</p>
+        <div style="background: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%); padding: 24px; border-radius: 20px; border: 2px solid #f43f5e40;">
+          <p style="font-size: 14px; font-weight: 700; color: #e11d48; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">⚠️ Pendientes</p>
+          <p style="font-size: 56px; font-weight: 800; color: #9f1239; margin: 8px 0 0 0; line-height: 1;">${p}</p>
         </div>
       </div>
     `;
 
-    clone.style.width = "100%";
-    clone.style.borderCollapse = "separate";
-    clone.style.borderSpacing = "0 16px";
+    // Aplicar estilos más nítidos a la tabla
+    clone.style.cssText = "width: 100%; border-collapse: separate; border-spacing: 0 12px;";
+    
     clone.querySelectorAll("th").forEach(th => {
-      th.style.textAlign = "left";
-      th.style.padding = "20px 24px";
-      th.style.color = "#475569";
-      th.style.fontSize = "18px";
-      th.style.fontWeight = "900";
-      th.style.textTransform = "uppercase";
-      th.style.letterSpacing = "0.06em";
+      th.style.cssText = `
+        text-align: left;
+        padding: 16px 20px;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        background: transparent;
+      `;
     });
-    clone.querySelectorAll("td").forEach(td => {
-      td.style.padding = "24px";
-      td.style.fontSize = "24px";
-      td.style.fontWeight = "700";
-      td.style.background = "#fff";
-      td.style.borderTop = "3px solid #f1f5f9";
-      td.style.borderBottom = "3px solid #f1f5f9";
-      
-      // Ajustar colores de estado para que resalten más en la foto
-      const txt = td.innerText.toLowerCase();
-      if (txt.includes("pagado") || txt.includes("cancelada")) td.style.color = "#059669";
-      if (txt.includes("pendiente")) td.style.color = "#e11d48";
-      if (txt.includes("retiro")) td.style.color = "#d97706";
-    });
-    clone.querySelectorAll("tr").forEach(tr => {
-      tr.querySelectorAll("td:first-child").forEach(td => {
-        td.style.borderLeft = "3px solid #f1f5f9";
-        td.style.borderRadius = "20px 0 0 20px";
-      });
-      tr.querySelectorAll("td:last-child").forEach(td => {
-        td.style.borderRight = "3px solid #f1f5f9";
-        td.style.borderRadius = "0 20px 20px 0";
+    
+    clone.querySelectorAll("tbody tr").forEach((tr, idx) => {
+      tr.querySelectorAll("td").forEach((td, tdIdx) => {
+        const isFirst = tdIdx === 0;
+        const isLast = tdIdx === tr.children.length - 1;
+        
+        td.style.cssText = `
+          padding: 10px 12px;
+          font-size: 18px;
+          font-weight: 600;
+          background: #ffffff;
+          color: #334155;
+          border-top: 2px solid #f1f5f9;
+          border-bottom: 2px solid #f1f5f9;
+          ${isFirst ? 'border-left: 2px solid #f1f5f9; border-radius: 16px 0 0 16px;' : ''}
+          ${isLast ? 'border-right: 2px solid #f1f5f9; border-radius: 0 16px 16px 0;' : ''}
+        `;
+        
+        // Colores de estado más vivos
+        const txt = td.innerText.toLowerCase();
+        if (txt.includes("pagado") || txt.includes("cancelada") || txt.includes("inscrito")) {
+          td.style.color = "#059669";
+          td.style.fontWeight = "700";
+        }
+        if (txt.includes("pendiente")) {
+          td.style.color = "#dc2626";
+          td.style.fontWeight = "700";
+        }
       });
     });
 
@@ -231,16 +238,49 @@ function RenderCobros({ logs, loading }) {
     document.body.appendChild(wrapper);
 
     try {
-      const canvas = await html2canvas(wrapper, { scale: 3, backgroundColor: null, useCORS: true });
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
-        const texto = mensajesPersonalizados[i] || getMensajeDefault();
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob, "text/plain": new Blob([texto], { type: "text/plain" }) })]);
-        alert("✅ Reporte Premium copiado");
-        document.body.removeChild(wrapper);
+      // Aumentar escala a 4 para mayor nitidez
+      const canvas = await html2canvas(wrapper, { 
+        scale: 4, 
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        logging: false,
+        imageTimeout: 0,
+        allowTaint: true
       });
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          document.body.removeChild(wrapper);
+          alert("❌ Error al generar imagen");
+          return;
+        }
+        
+        const texto = mensajesPersonalizados[i] || getMensajeDefault();
+        
+        try {
+          // Copiar texto + imagen juntos
+          await navigator.clipboard.write([
+            new ClipboardItem({ 
+              "image/png": blob, 
+              "text/plain": new Blob([texto], { type: "text/plain" }) 
+            })
+          ]);
+          alert("✅ Texto + Imagen copiados al portapapeles");
+        } catch (clipErr) {
+          // Fallback: intentar copiar solo la imagen
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+            alert("✅ Imagen copiada (pega el texto manualmente)");
+          } catch {
+            alert("❌ Error al copiar al portapapeles");
+          }
+        }
+        
+        document.body.removeChild(wrapper);
+      }, "image/png", 1.0);
     } catch (e) {
       document.body.removeChild(wrapper);
+      console.error("Error html2canvas:", e);
       alert("❌ Error al generar imagen");
     }
   };
@@ -501,11 +541,11 @@ function RenderCobros({ logs, loading }) {
 
                     return (
                       <tr key={j} className="group transition-all duration-300">
-                        <td className="px-6 py-4 bg-slate-50 rounded-l-2xl text-xs font-black text-slate-400 group-hover:bg-slate-100 transition-colors">{j + 1}</td>
-                        <td className="px-6 py-4 bg-slate-50 group-hover:bg-slate-100 transition-colors">
+                        <td className="px-6 py-2 bg-slate-50 rounded-l-2xl text-xs font-black text-slate-400 group-hover:bg-slate-100 transition-colors">{j + 1}</td>
+                        <td className="px-6 py-2 bg-slate-50 group-hover:bg-slate-100 transition-colors">
                           <div className="flex flex-col">
                             <span className="text-sm font-bold text-slate-800">{res?.nombreAlumno}</span>
-                            <span className="text-[10px] font-bold text-slate-400 font-mono">{res?.id}</span>
+                            <span className="text-[14px] font-bold text-slate-400 font-mono">{res?.id}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 bg-slate-50 text-center group-hover:bg-slate-100 transition-colors">
@@ -514,14 +554,13 @@ function RenderCobros({ logs, loading }) {
                           </span>
                         </td>
                         <td className="px-6 py-4 bg-slate-50 text-center group-hover:bg-slate-100 transition-colors">
-                          <span className="text-[10px] font-black text-slate-500 font-mono bg-white px-2 py-1 rounded-lg border border-slate-200">
+                          <span className="text-[16px] font-black text-slate-500 font-mono bg-white px-2 py-1 rounded-lg border border-slate-200">
                             {res?.codigoPago || "-"}
                           </span>
                         </td>
                         <td className="px-6 py-4 bg-slate-50 rounded-r-2xl group-hover:bg-slate-100 transition-colors">
                           <div className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} animate-pulse`}></span>
-                            <span className="text-[10px] font-black uppercase tracking-wider">{statusConfig.label}</span>
+                            <span className="text-[13px] font-black uppercase tracking-wider">{statusConfig.label}</span>
                           </div>
                         </td>
                       </tr>
