@@ -16,6 +16,8 @@ function RenderCobros({ logs, loading }) {
     return localStorage.getItem("mensajeGlobal") || "";
   });
   const [mostrarConfigGlobal, setMostrarConfigGlobal] = useState(false);
+  const [mostrarModalRetiro, setMostrarModalRetiro] = useState(false);
+  const [mostrarModalDeuda, setMostrarModalDeuda] = useState(false);
 
   // Guardar mensaje global en localStorage
   useEffect(() => {
@@ -81,10 +83,13 @@ function RenderCobros({ logs, loading }) {
     let cancelados = 0;
     let pendientes = 0;
     let retiro = 0;
+    const listaRetiro = [];
+    const listaDeuda = [];
 
     logs.forEach(hoja => {
       const resultados = hoja?.msg?.resultados || [];
       const nrcEsperado = hoja?.msg?.hoja?.split("-")[0]?.trim() ?? "";
+      const nombreHoja = hoja?.msg?.hoja || "Sin nombre";
       
       resultados.forEach(res => {
         total++;
@@ -95,16 +100,22 @@ function RenderCobros({ logs, loading }) {
           d = filasConNrcEsperado.length > 0 ? filasConNrcEsperado[filasConNrcEsperado.length - 1] : datosValidos[datosValidos.length - 1];
         }
 
-        if (!d) retiro++;
-        else {
+        if (!d) {
+          retiro++;
+          listaRetiro.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
+        } else {
           const estadoTexto = (d?.estado ?? "").toLowerCase();
-          if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) pendientes++;
-          else cancelados++;
+          if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+            pendientes++;
+            listaDeuda.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
+          } else {
+            cancelados++;
+          }
         }
       });
     });
 
-    return { total, cancelados, pendientes, retiro };
+    return { total, cancelados, pendientes, retiro, listaRetiro, listaDeuda };
   }, [logs]);
 
   const copiarSoloTexto = async (i) => {
@@ -151,85 +162,84 @@ function RenderCobros({ logs, loading }) {
       else p++;
     });
 
+    const totalAlumnos = c + p;
+
     const wrapper = document.createElement("div");
     wrapper.className = "font-sans";
     wrapper.style.cssText = `
-      padding: 48px;
-      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
-      width: 1000px;
-      border-radius: 32px;
+      padding: 16px 20px;
+      background: #ffffff;
+      width: 780px;
+      border-radius: 12px;
       position: fixed;
       top: -9999px;
       left: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      border: 1px solid #e5e7eb;
     `;
     
     wrapper.innerHTML = `
-      <div style="margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #e2e8f0; padding-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb;">
         <div>
-          <h2 style="font-size: 42px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em;">${nombreHoja}</h2>
-          <p style="font-size: 18px; color: #64748b; font-weight: 600; margin-top: 6px;">Reporte de Pagos • SENATI</p>
+          <h2 style="font-size: 18px; font-weight: 700; color: #1f2937; margin: 0;">${nombreHoja}</h2>
+          <p style="font-size: 11px; color: #6b7280; font-weight: 500; margin: 3px 0 0 0;">SENATI • ${fechaActual}</p>
         </div>
-        <div style="text-align: right;">
-          <p style="font-size: 18px; font-weight: 700; color: #3b82f6; background: #eff6ff; padding: 10px 20px; border-radius: 16px; display: inline-block;">${fechaActual}</p>
-        </div>
-      </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px;">
-        <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 24px; border-radius: 20px; border: 2px solid #10b98140;">
-          <p style="font-size: 14px; font-weight: 700; color: #059669; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">✅ Pagados</p>
-          <p style="font-size: 56px; font-weight: 800; color: #065f46; margin: 8px 0 0 0; line-height: 1;">${c}</p>
-        </div>
-        <div style="background: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%); padding: 24px; border-radius: 20px; border: 2px solid #f43f5e40;">
-          <p style="font-size: 14px; font-weight: 700; color: #e11d48; text-transform: uppercase; letter-spacing: 0.1em; margin: 0;">⚠️ Pendientes</p>
-          <p style="font-size: 56px; font-weight: 800; color: #9f1239; margin: 8px 0 0 0; line-height: 1;">${p}</p>
+        <div style="display: flex; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 5px; background: #ecfdf5; padding: 5px 12px; border-radius: 6px;">
+            <span style="font-size: 11px;">✅</span>
+            <span style="font-size: 12px; font-weight: 600; color: #059669;">Pagados: <strong style="font-size: 15px;">${c}</strong></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 5px; background: #fef2f2; padding: 5px 12px; border-radius: 6px;">
+            <span style="font-size: 11px;">⚠️</span>
+            <span style="font-size: 12px; font-weight: 600; color: #dc2626;">Pendientes: <strong style="font-size: 15px;">${p}</strong></span>
+          </div>
         </div>
       </div>
     `;
 
-    // Aplicar estilos más nítidos a la tabla
-    clone.style.cssText = "width: 100%; border-collapse: separate; border-spacing: 0 12px;";
+    // Aplicar estilos compactos a la tabla
+    clone.style.cssText = "width: 100%; border-collapse: collapse;";
     
-    clone.querySelectorAll("th").forEach(th => {
+    clone.querySelectorAll("th").forEach((th, thIdx) => {
+      const isNombreHeader = thIdx === 1;
       th.style.cssText = `
-        text-align: left;
-        padding: 16px 20px;
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 700;
+        text-align: ${isNombreHeader ? 'left' : 'center'};
+        padding: 8px 6px;
+        color: #374151;
+        font-size: 12px;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        background: transparent;
+        letter-spacing: 0.03em;
+        background: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
       `;
     });
     
     clone.querySelectorAll("tbody tr").forEach((tr, idx) => {
+      const isEven = idx % 2 === 0;
       tr.querySelectorAll("td").forEach((td, tdIdx) => {
-        const isFirst = tdIdx === 0;
-        const isLast = tdIdx === tr.children.length - 1;
-        
+        // tdIdx 1 es la columna del nombre del alumno
+        const isNombreColumn = tdIdx === 1;
         td.style.cssText = `
-          padding: 10px 12px;
-          font-size: 18px;
-          font-weight: 600;
-          background: #ffffff;
-          color: #334155;
-          border-top: 2px solid #f1f5f9;
-          border-bottom: 2px solid #f1f5f9;
-          ${isFirst ? 'border-left: 2px solid #f1f5f9; border-radius: 16px 0 0 16px;' : ''}
-          ${isLast ? 'border-right: 2px solid #f1f5f9; border-radius: 0 16px 16px 0;' : ''}
+          padding: ${totalAlumnos > 20 ? '5px 6px' : '7px 8px'};
+          font-size: ${totalAlumnos > 20 ? '14px' : '15px'};
+          font-weight: 500;
+          background: ${isEven ? '#ffffff' : '#f9fafb'};
+          color: #1f2937;
+          border-bottom: 1px solid #f3f4f6;
+          text-align: ${isNombreColumn ? 'left' : 'center'};
         `;
         
-        // Colores de estado más vivos
+        // Colores de estado
         const txt = td.innerText.toLowerCase();
         if (txt.includes("pagado") || txt.includes("cancelada") || txt.includes("inscrito")) {
           td.style.color = "#059669";
-          td.style.fontWeight = "700";
+          td.style.fontWeight = "600";
         }
         if (txt.includes("pendiente")) {
           td.style.color = "#dc2626";
-          td.style.fontWeight = "700";
+          td.style.fontWeight = "600";
         }
       });
     });
@@ -238,9 +248,10 @@ function RenderCobros({ logs, loading }) {
     document.body.appendChild(wrapper);
 
     try {
-      // Aumentar escala a 4 para mayor nitidez
+      // Escala adaptativa según cantidad de alumnos
+      const escala = totalAlumnos > 25 ? 3 : 4;
       const canvas = await html2canvas(wrapper, { 
-        scale: 4, 
+        scale: escala, 
         backgroundColor: "#ffffff",
         useCORS: true,
         logging: false,
@@ -258,19 +269,22 @@ function RenderCobros({ logs, loading }) {
         const texto = mensajesPersonalizados[i] || getMensajeDefault();
         
         try {
-          // Copiar texto + imagen juntos
+          // Copiar imagen + texto juntos usando ClipboardItem
           await navigator.clipboard.write([
             new ClipboardItem({ 
-              "image/png": blob, 
-              "text/plain": new Blob([texto], { type: "text/plain" }) 
+              "image/png": blob,
+              "text/plain": new Blob([texto], { type: "text/plain" })
             })
           ]);
-          alert("✅ Texto + Imagen copiados al portapapeles");
+          alert("✅ Imagen + Texto copiados al portapapeles\n\n💡 Tip: En WhatsApp pega primero la imagen, luego el texto se pegará después.");
         } catch (clipErr) {
-          // Fallback: intentar copiar solo la imagen
+          console.log("Error copiando imagen+texto juntos:", clipErr);
+          // Fallback: intentar copiar solo la imagen y luego copiar texto
           try {
             await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-            alert("✅ Imagen copiada (pega el texto manualmente)");
+            // Guardar el texto en localStorage para pegarlo después
+            localStorage.setItem("textoReportePendiente", texto);
+            alert("✅ Imagen copiada\n\n📝 El texto se guardó. Haz clic en '📝 Texto' para copiarlo después de pegar la imagen.");
           } catch {
             alert("❌ Error al copiar al portapapeles");
           }
@@ -352,20 +366,28 @@ function RenderCobros({ logs, loading }) {
                 <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Pagados</p>
                 <p className="text-xl font-black text-emerald-700">{stats.cancelados}</p>
               </div>
-              <div className="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+              <button 
+                onClick={() => setMostrarModalDeuda(true)}
+                className="p-4 bg-rose-50 rounded-2xl border border-rose-100 hover:bg-rose-100 transition-colors text-left cursor-pointer"
+              >
                 <p className="text-[10px] font-black text-rose-600 uppercase mb-1">Deuda</p>
                 <p className="text-xl font-black text-rose-700">{stats.pendientes}</p>
-              </div>
+                <p className="text-[9px] text-rose-400 mt-1">Click para ver lista</p>
+              </button>
             </div>
-            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+            <button 
+              onClick={() => setMostrarModalRetiro(true)}
+              className="w-full p-4 bg-amber-50 rounded-2xl border border-amber-100 hover:bg-amber-100 transition-colors text-left cursor-pointer"
+            >
               <div className="flex justify-between items-end">
                 <div>
                   <p className="text-[10px] font-black text-amber-600 uppercase mb-1">Para Retiro</p>
                   <p className="text-xl font-black text-amber-700">{stats.retiro}</p>
+                  <p className="text-[9px] text-amber-400 mt-1">Click para ver lista</p>
                 </div>
                 <span className="text-2xl">🚨</span>
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -554,7 +576,7 @@ function RenderCobros({ logs, loading }) {
                           </span>
                         </td>
                         <td className="px-6 py-4 bg-slate-50 text-center group-hover:bg-slate-100 transition-colors">
-                          <span className="text-[16px] font-black text-slate-500 font-mono bg-white px-2 py-1 rounded-lg border border-slate-200">
+                          <span className="text-[15px] font-bold text-blue-700 font-mono bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 tracking-wider">
                             {res?.codigoPago || "-"}
                           </span>
                         </td>
@@ -597,6 +619,84 @@ function RenderCobros({ logs, loading }) {
                 <button onClick={() => setMensajeGlobal("")} className="flex-1 py-4 text-sm font-bold text-rose-600 hover:bg-rose-50 rounded-2xl transition-colors">Restaurar Original</button>
                 <button onClick={() => setMostrarConfigGlobal(false)} className="flex-1 py-4 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 shadow-xl shadow-slate-900/20 transition-all">Guardar Cambios</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lista de Retiros */}
+      {mostrarModalRetiro && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-2xl shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🚨</span>
+                <div>
+                  <h3 className="text-xl font-black text-amber-700">Alumnos para Retiro</h3>
+                  <p className="text-sm text-slate-500">{stats.listaRetiro.length} alumnos en total</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalRetiro(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {stats.listaRetiro.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <span className="text-4xl">✅</span>
+                  <p className="mt-2 font-medium">No hay alumnos para retiro</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {stats.listaRetiro.map((alumno, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{alumno.nombre}</p>
+                        <p className="text-xs text-slate-500 font-mono">{alumno.id}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-2 py-1 rounded-lg">{alumno.hoja}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lista de Deudores */}
+      {mostrarModalDeuda && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-2xl shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">⚠️</span>
+                <div>
+                  <h3 className="text-xl font-black text-rose-700">Alumnos con Deuda</h3>
+                  <p className="text-sm text-slate-500">{stats.listaDeuda.length} alumnos en total</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalDeuda(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {stats.listaDeuda.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <span className="text-4xl">✅</span>
+                  <p className="mt-2 font-medium">No hay alumnos con deuda</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {stats.listaDeuda.map((alumno, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-rose-50 rounded-xl border border-rose-100">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{alumno.nombre}</p>
+                        <p className="text-xs text-slate-500 font-mono">{alumno.id}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded-lg">{alumno.hoja}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
