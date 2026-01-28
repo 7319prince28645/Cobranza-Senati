@@ -8,6 +8,8 @@ function RenderCobros({ logs, loading }) {
   const [mostrarEditorMensaje, setMostrarEditorMensaje] = useState({});
   const [activeSheetIndex, setActiveSheetIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [problemasTrazabilidad, setProblemasTrazabilidad] = useState([]);
+  const [mostrarAlertaTrazabilidad, setMostrarAlertaTrazabilidad] = useState(true);
   
   // Estado para el mensaje global
   const [mensajeGlobal, setMensajeGlobal] = useState(() => {
@@ -23,6 +25,45 @@ function RenderCobros({ logs, loading }) {
       localStorage.removeItem("mensajeGlobal");
     }
   }, [mensajeGlobal]);
+  
+  // Detectar problemas de trazabilidad en los logs
+  useEffect(() => {
+    if (!logs || logs.length === 0) return;
+    
+    const problemasDetectados = [];
+    
+    logs.forEach((hoja, hojaIndex) => {
+      const resultados = hoja?.msg?.resultados || [];
+      
+      resultados.forEach((alumno, alumnoIndex) => {
+        const datos = alumno?.datos || [];
+        const id = alumno?.id || 'N/A';
+        
+        // Detectar inconsistencias
+        const tienePagos = datos.some(d => d?.estado?.toLowerCase() === 'cancelado');
+        const tieneNRC = datos.some(d => d?.nrc);
+        const esRetiro = alumno?.estado?.toLowerCase()?.includes('retiro');
+        
+        if (esRetiro && (tienePagos || tieneNRC)) {
+          problemasDetectados.push({
+            id,
+            hojaIndex,
+            alumnoIndex,
+            tipo: 'INCONSISTENCIA_RETIRO',
+            mensaje: `ID ${id} marcado como retiro pero tiene ${tienePagos ? 'pagos' : 'NRC asignado'}`,
+            severidad: 'alta'
+          });
+        }
+      });
+    });
+    
+    setProblemasTrazabilidad(problemasDetectados);
+    
+    if (problemasDetectados.length > 0) {
+      console.warn(`⚠️ [TRAZABILIDAD] Detectados ${problemasDetectados.length} problemas de coherencia`);
+      problemasDetectados.forEach(p => console.warn(`   - ${p.mensaje}`));
+    }
+  }, [logs]);
 
   const getMensajeDefault = () => {
     if (mensajeGlobal) return mensajeGlobal;
@@ -207,6 +248,51 @@ function RenderCobros({ logs, loading }) {
   if (logs.length === 0) return null;
 
   return (
+    <>
+      {/* Alerta de Problemas de Trazabilidad */}
+      {problemasTrazabilidad.length > 0 && mostrarAlertaTrazabilidad && (
+        <div className="mx-4 mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-bold text-yellow-800">
+                  ⚠️ Problemas de Trazabilidad Detectados ({problemasTrazabilidad.length})
+                </h3>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p className="mb-2">Se detectaron inconsistencias que afectan la trazabilidad:</p>
+                  <ul className="list-disc pl-5 space-y-1 max-h-40 overflow-y-auto">
+                    {problemasTrazabilidad.slice(0, 10).map((problema, idx) => (
+                      <li key={idx} className={problema.severidad === 'alta' ? 'font-semibold' : ''}>
+                        <strong>Hoja {problema.hojaIndex + 1}:</strong> {problema.mensaje}
+                      </li>
+                    ))}
+                    {problemasTrazabilidad.length > 10 && (
+                      <li className="italic">... y {problemasTrazabilidad.length - 10} más</li>
+                    )}
+                  </ul>
+                  <p className="mt-3 text-xs">
+                    💡 <strong>Recomendación:</strong> Verificar y corregir estados inconsistentes en el sistema.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setMostrarAlertaTrazabilidad(false)}
+              className="ml-4 text-yellow-600 hover:text-yellow-800"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+      
     <div className="flex flex-col lg:flex-row gap-8 min-h-[calc(100vh-120px)]">
       {/* Sidebar Navigation */}
       <aside className="w-full lg:w-80 flex flex-col gap-6">
@@ -483,8 +569,7 @@ function RenderCobros({ logs, loading }) {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
       `}} />
-    </div>
-  );
+    </div>    </>  );
 }
 
 export default RenderCobros;

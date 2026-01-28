@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "npm run dev --prefix automatizacion",
-    "dev:client": "npm run dev:host --prefix Senati-Comandos",
+    "dev:client": "npm run dev:host --prefix Senati-comandos",
     "dev:host": "vite --host"
   },
   "devDependencies": {

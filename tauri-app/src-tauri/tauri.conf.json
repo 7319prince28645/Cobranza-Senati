@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/1",
+  "build": {
+    "beforeBuildCommand": "cd ..\\Senati-comandos && npm install && npm run build",
+    "beforeDevCommand": "cd ..\\Senati-comandos && npm install && npm run dev -- --host --port 5173",
+    "devPath": "http://localhost:5173",
+    "distDir": "../Senati-comandos/dist"
+  },
+  "package": {
+    "productName": "Cobranza SENATI",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "bundle": {
+      "active": true,
+      "identifier": "com.senati.cobranza",
+      "targets": ["nsis"],
+      "windows": {
+        "wix": {
+          "enabled": false
+        }
+      }
+    },
+    "windows": [
+      {
+        "title": "Cobranza SENATI",
+        "width": 1200,
+        "height": 800,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false
+      }
+    }
+  }
+}

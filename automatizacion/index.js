@@ -51,7 +51,13 @@ app.get("/automatizacion-stream", async (req, res) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`✅ Server running at http://${HOST}:${PORT}`);
-  console.log(`🚀 Servidor listo y actualizado: ${new Date().toLocaleString()}`);
-});
+// Si se ejecuta directamente (no desde Electron)
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`✅ Server running at http://${HOST}:${PORT}`);
+    console.log(`🚀 Servidor listo y actualizado: ${new Date().toLocaleString()}`);
+  });
+}
+
+// Exportar para uso en Electron
+module.exports = app;
