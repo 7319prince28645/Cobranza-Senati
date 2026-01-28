@@ -18,6 +18,8 @@ function RenderCobros({ logs, loading }) {
   const [mostrarConfigGlobal, setMostrarConfigGlobal] = useState(false);
   const [mostrarModalRetiro, setMostrarModalRetiro] = useState(false);
   const [mostrarModalDeuda, setMostrarModalDeuda] = useState(false);
+  const [mostrarModalMatriculaPendiente, setMostrarModalMatriculaPendiente] = useState(false);
+  const [mostrarModalBecados, setMostrarModalBecados] = useState(false);
 
   // Guardar mensaje global en localStorage
   useEffect(() => {
@@ -83,8 +85,12 @@ function RenderCobros({ logs, loading }) {
     let cancelados = 0;
     let pendientes = 0;
     let retiro = 0;
+    let matriculaPendiente = 0;
+    let becados = 0;
     const listaRetiro = [];
     const listaDeuda = [];
+    const listaMatriculaPendiente = [];
+    const listaBecados = [];
 
     logs.forEach(hoja => {
       const resultados = hoja?.msg?.resultados || [];
@@ -94,17 +100,49 @@ function RenderCobros({ logs, loading }) {
       resultados.forEach(res => {
         total++;
         const datosValidos = (res?.datos ?? []).filter(x => x && (x.nrc || x.concepto || x.monto || x.estado));
-        let d = null;
-        if (datosValidos.length > 0) {
-          const filasConNrcEsperado = datosValidos.filter(x => parseInt(x.nrc, 10) === parseInt(nrcEsperado, 10));
-          d = filasConNrcEsperado.length > 0 ? filasConNrcEsperado[filasConNrcEsperado.length - 1] : datosValidos[datosValidos.length - 1];
+        
+        // Filtrar por NRC esperado
+        const filasConNrcEsperado = datosValidos.filter(x => parseInt(x.nrc, 10) === parseInt(nrcEsperado, 10));
+        const datosAUsar = filasConNrcEsperado.length > 0 ? filasConNrcEsperado : datosValidos;
+        
+        // Verificar si es becado
+        const esBecado = datosAUsar.some(x => 
+          x?.concepto?.toLowerCase()?.includes('becado') || 
+          x?.estado?.toLowerCase()?.includes('becado')
+        );
+        
+        // Si es becado, agregarlo a la lista
+        if (esBecado) {
+          becados++;
+          listaBecados.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
         }
+        
+        // Buscar matrícula
+        const matricula = datosAUsar.find(x => 
+          x?.concepto?.toLowerCase()?.includes('matrícula') || 
+          x?.concepto?.toLowerCase()?.includes('matricula')
+        );
+        
+        // Verificar estado de matrícula (pendiente si existe y no está cancelada, y no es becado)
+        if (!esBecado && matricula) {
+          const estadoMatricula = (matricula?.estado ?? "").toLowerCase();
+          if (estadoMatricula === "pendiente de pago" || estadoMatricula.includes("pendiente")) {
+            matriculaPendiente++;
+            listaMatriculaPendiente.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
+          }
+        }
+        
+        // Buscar mensualidad (excluyendo matrícula)
+        const mensualidad = datosAUsar.find(x => 
+          !x?.concepto?.toLowerCase()?.includes('matrícula') && 
+          !x?.concepto?.toLowerCase()?.includes('matricula')
+        ) || datosAUsar.find(x => x); // fallback al primer dato disponible
 
-        if (!d) {
+        if (!mensualidad) {
           retiro++;
           listaRetiro.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
         } else {
-          const estadoTexto = (d?.estado ?? "").toLowerCase();
+          const estadoTexto = (mensualidad?.estado ?? "").toLowerCase();
           if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
             pendientes++;
             listaDeuda.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
@@ -115,8 +153,72 @@ function RenderCobros({ logs, loading }) {
       });
     });
 
-    return { total, cancelados, pendientes, retiro, listaRetiro, listaDeuda };
+    return { total, cancelados, pendientes, retiro, matriculaPendiente, becados, listaRetiro, listaDeuda, listaMatriculaPendiente, listaBecados };
   }, [logs]);
+
+  // Función helper para procesar datos del alumno (mensualidad y matrícula)
+  const procesarDatosAlumno = (res, nrcEsperado) => {
+    const datosValidos = (res?.datos ?? []).filter(x => x && (x.nrc || x.concepto || x.monto || x.estado));
+    
+    // Filtrar por NRC esperado
+    const filasConNrcEsperado = datosValidos.filter(x => parseInt(x.nrc, 10) === parseInt(nrcEsperado, 10));
+    const datosAUsar = filasConNrcEsperado.length > 0 ? filasConNrcEsperado : datosValidos;
+    
+    // Separar mensualidad y matrícula
+    const matricula = datosAUsar.find(x => 
+      x?.concepto?.toLowerCase()?.includes('matrícula') || 
+      x?.concepto?.toLowerCase()?.includes('matricula')
+    );
+    
+    const mensualidad = datosAUsar.find(x => 
+      !x?.concepto?.toLowerCase()?.includes('matrícula') && 
+      !x?.concepto?.toLowerCase()?.includes('matricula')
+    ) || datosAUsar[datosAUsar.length - 1];
+    
+    // Verificar si es becado (en concepto o estado de cualquier registro)
+    const esBecado = datosAUsar.some(x => 
+      x?.concepto?.toLowerCase()?.includes('becado') || 
+      x?.estado?.toLowerCase()?.includes('becado')
+    );
+    
+    // Determinar estados
+    const getEstado = (dato, forzarCancelado = false) => {
+      // Si es becado, forzar cancelado
+      if (forzarCancelado) {
+        return { tipo: 'cancelado', texto: 'Becado' };
+      }
+      if (!dato) return { tipo: 'retiro', texto: 'Sin datos' };
+      const estadoTexto = (dato?.estado ?? "").toLowerCase();
+      const conceptoTexto = (dato?.concepto ?? "").toLowerCase();
+      
+      // Si el concepto o estado indica becado, está cancelado
+      if (conceptoTexto.includes('becado') || estadoTexto.includes('becado')) {
+        return { tipo: 'cancelado', texto: 'Becado' };
+      }
+      if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+        return { tipo: 'pendiente', texto: 'Pendiente' };
+      }
+      if (estadoTexto.includes("cancelad") || estadoTexto.includes("adeuda") || estadoTexto === "inscrito") {
+        return { tipo: 'cancelado', texto: 'Cancelado' };
+      }
+      return { tipo: 'otro', texto: dato?.estado || 'Desconocido' };
+    };
+    
+    // Si es becado y no tiene matrícula explícita, la matrícula también está cancelada
+    const estadoMatricula = matricula 
+      ? getEstado(matricula) 
+      : (esBecado ? { tipo: 'cancelado', texto: 'Becado' } : { tipo: 'retiro', texto: 'Sin datos' });
+    
+    return {
+      mensualidad: mensualidad || null,
+      matricula: matricula || null,
+      estadoMensualidad: getEstado(mensualidad),
+      estadoMatricula: estadoMatricula,
+      tieneMatricula: !!matricula || esBecado, // Mostrar matrícula si es becado
+      esBecado: esBecado,
+      nrc: mensualidad?.nrc || matricula?.nrc || null
+    };
+  };
 
   const copiarSoloTexto = async (i) => {
     const texto = mensajesPersonalizados[i] || getMensajeDefault();
@@ -137,39 +239,53 @@ function RenderCobros({ logs, loading }) {
     const fechaActual = new Date().toLocaleDateString("es-PE", { day: "2-digit", month: "long", year: "numeric" });
 
     const clone = tabla.cloneNode(true);
+    
+    // Si NO se incluye matrícula, eliminar esa columna del clone
     if (!incluirMatricula[i]) {
-      const thIndex = Array.from(clone.querySelectorAll("th")).findIndex(th => th.innerText.toLowerCase().includes("matrícula"));
+      const headers = Array.from(clone.querySelectorAll("th"));
+      const thIndex = headers.findIndex(th => th.innerText.toLowerCase().includes("matrícula"));
       if (thIndex >= 0) {
-        clone.querySelectorAll("tr").forEach(tr => { if (tr.children[thIndex]) tr.removeChild(tr.children[thIndex]); });
+        clone.querySelectorAll("tr").forEach(tr => { 
+          if (tr.children[thIndex]) tr.removeChild(tr.children[thIndex]); 
+        });
       }
     }
 
-    // Siempre eliminar filas de retiro de la imagen (dato interno, no para alumnos)
-    const filas = Array.from(clone.querySelectorAll("tbody tr"));
-    filas.forEach((tr) => {
-      const txt = tr.innerText.toLowerCase();
-      const esRetiro = txt.includes("retiro");
-      if (esRetiro) {
-        tr.remove();
+    // Eliminar filas de retiro si no está marcado incluir retiros
+    if (!incluirRetiro[i]) {
+      const filas = Array.from(clone.querySelectorAll("tbody tr"));
+      filas.forEach((tr) => {
+        const txt = tr.innerText.toLowerCase();
+        const esRetiro = txt.includes("retiro");
+        if (esRetiro) {
+          tr.remove();
+        }
+      });
+    }
+
+    // Resumen para la foto - contar estados de mensualidad (columna 5)
+    let c = 0, p = 0;
+    clone.querySelectorAll("tbody tr").forEach(tr => {
+      const celdas = tr.querySelectorAll("td");
+      // La columna de mensualidad es la 5ta (índice 4)
+      const celdaMensualidad = celdas[4];
+      if (celdaMensualidad) {
+        const txt = celdaMensualidad.innerText.toLowerCase();
+        if (txt.includes("cancelado") || txt.includes("cancelada")) c++;
+        else if (txt.includes("pendiente")) p++;
+        // Los retiros ya fueron eliminados si no se incluyeron
       }
     });
 
-    // Resumen para la foto - Solo mostrar Pagados y Pendientes (sin Retiros)
-    let c = 0, p = 0;
-    clone.querySelectorAll("tbody tr").forEach(tr => {
-      const txt = tr.innerText.toLowerCase();
-      if (txt.includes("cancelada") || txt.includes("inscrito") || txt.includes("pagado")) c++;
-      else p++;
-    });
-
     const totalAlumnos = c + p;
+    const anchoBase = incluirMatricula[i] ? 900 : 780;
 
     const wrapper = document.createElement("div");
     wrapper.className = "font-sans";
     wrapper.style.cssText = `
       padding: 16px 20px;
       background: #ffffff;
-      width: 780px;
+      width: ${anchoBase}px;
       border-radius: 12px;
       position: fixed;
       top: -9999px;
@@ -363,7 +479,7 @@ function RenderCobros({ logs, loading }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Pagados</p>
+                <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">Cancelados</p>
                 <p className="text-xl font-black text-emerald-700">{stats.cancelados}</p>
               </div>
               <button 
@@ -388,6 +504,36 @@ function RenderCobros({ logs, loading }) {
                 <span className="text-2xl">🚨</span>
               </div>
             </button>
+            {stats.matriculaPendiente > 0 && (
+              <button 
+                onClick={() => setMostrarModalMatriculaPendiente(true)}
+                className="w-full p-4 bg-purple-50 rounded-2xl border border-purple-100 hover:bg-purple-100 transition-colors text-left cursor-pointer"
+              >
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] font-black text-purple-600 uppercase mb-1">Matrícula Pendiente</p>
+                    <p className="text-xl font-black text-purple-700">{stats.matriculaPendiente}</p>
+                    <p className="text-[9px] text-purple-400 mt-1">Click para ver lista</p>
+                  </div>
+                  <span className="text-2xl">📝</span>
+                </div>
+              </button>
+            )}
+            {stats.becados > 0 && (
+              <button 
+                onClick={() => setMostrarModalBecados(true)}
+                className="w-full p-4 bg-cyan-50 rounded-2xl border border-cyan-100 hover:bg-cyan-100 transition-colors text-left cursor-pointer"
+              >
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-[10px] font-black text-cyan-600 uppercase mb-1">Becados</p>
+                    <p className="text-xl font-black text-cyan-700">{stats.becados}</p>
+                    <p className="text-[9px] text-cyan-400 mt-1">Click para ver lista</p>
+                  </div>
+                  <span className="text-2xl">🎓</span>
+                </div>
+              </button>
+            )}
           </div>
         </div>
 
@@ -399,27 +545,78 @@ function RenderCobros({ logs, loading }) {
           </div>
           
           <div className="flex-1 overflow-y-auto custom-scrollbar px-2 space-y-2">
-            {logs.map((hoja, idx) => (
+            {logs.map((hoja, idx) => {
+              // Calcular stats por hoja
+              const resultados = hoja?.msg?.resultados || [];
+              const nrcEsperado = hoja?.msg?.hoja?.split("-")[0]?.trim() ?? "";
+              let pagados = 0, pendientesHoja = 0, becadosHoja = 0;
+              
+              resultados.forEach(res => {
+                const datosValidos = (res?.datos ?? []).filter(x => x && (x.nrc || x.concepto || x.monto || x.estado));
+                const filasConNrcEsperado = datosValidos.filter(x => parseInt(x.nrc, 10) === parseInt(nrcEsperado, 10));
+                const datosAUsar = filasConNrcEsperado.length > 0 ? filasConNrcEsperado : datosValidos;
+                
+                const esBecado = datosAUsar.some(x => 
+                  x?.concepto?.toLowerCase()?.includes('becado') || 
+                  x?.estado?.toLowerCase()?.includes('becado')
+                );
+                
+                if (esBecado) {
+                  becadosHoja++;
+                  pagados++; // Becados cuentan como pagados
+                } else {
+                  const mensualidad = datosAUsar.find(x => 
+                    !x?.concepto?.toLowerCase()?.includes('matrícula') && 
+                    !x?.concepto?.toLowerCase()?.includes('matricula')
+                  ) || datosAUsar[0];
+                  
+                  if (mensualidad) {
+                    const estadoTexto = (mensualidad?.estado ?? "").toLowerCase();
+                    if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+                      pendientesHoja++;
+                    } else {
+                      pagados++;
+                    }
+                  }
+                }
+              });
+              
+              return (
               <button
                 key={idx}
                 onClick={() => setActiveSheetIndex(idx)}
-                className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-300 flex items-center justify-between group ${
+                className={`w-full text-left px-4 py-3 rounded-2xl transition-all duration-300 flex items-center justify-between group ${
                   activeSheetIndex === idx 
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30 -translate-y-0.5" 
                   : "hover:bg-slate-50 text-slate-600"
                 }`}
               >
                 <div className="flex flex-col">
-                  <span className={`text-sm font-bold truncate max-w-[160px] ${activeSheetIndex === idx ? "text-white" : "text-slate-800"}`}>
+                  <span className={`text-sm font-bold truncate max-w-[120px] ${activeSheetIndex === idx ? "text-white" : "text-slate-800"}`}>
                     {hoja?.msg?.hoja}
                   </span>
                   <span className={`text-[10px] font-bold uppercase tracking-wider ${activeSheetIndex === idx ? "text-blue-100" : "text-slate-400"}`}>
                     {hoja?.msg?.resultados?.length || 0} alumnos
                   </span>
                 </div>
-                <span className={`text-xs opacity-0 group-hover:opacity-100 transition-opacity ${activeSheetIndex === idx ? "text-white" : "text-blue-600"}`}>→</span>
+                <div className="flex items-center gap-1">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${activeSheetIndex === idx ? "bg-emerald-400/30 text-emerald-100" : "bg-emerald-100 text-emerald-600"}`}>
+                    ✓{pagados}
+                  </span>
+                  {pendientesHoja > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${activeSheetIndex === idx ? "bg-rose-400/30 text-rose-100" : "bg-rose-100 text-rose-600"}`}>
+                      !{pendientesHoja}
+                    </span>
+                  )}
+                  {becadosHoja > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${activeSheetIndex === idx ? "bg-cyan-400/30 text-cyan-100" : "bg-cyan-100 text-cyan-600"}`}>
+                      🎓{becadosHoja}
+                    </span>
+                  )}
+                </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </aside>
@@ -459,7 +656,7 @@ function RenderCobros({ logs, loading }) {
           {/* Background Decoration */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50/50 blur-3xl rounded-full -mr-32 -mt-32 -z-10"></div>
           
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 gap-2">
             <div>
               <h2 className="text-3xl font-black text-slate-900 tracking-tight">
                 {logs[activeSheetIndex]?.msg?.hoja}
@@ -523,7 +720,10 @@ function RenderCobros({ logs, loading }) {
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Alumno</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">NRC</th>
                   <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Código</th>
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
+                  <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Mensualidad</th>
+                  {incluirMatricula[activeSheetIndex] && (
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Matrícula</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -534,57 +734,65 @@ function RenderCobros({ logs, loading }) {
                   )
                   .map((res, j) => {
                     const nrcEsperado = logs[activeSheetIndex]?.msg?.hoja?.split("-")[0]?.trim() ?? "";
-                    const datosValidos = (res?.datos ?? []).filter(x => x && (x.nrc || x.concepto || x.monto || x.estado));
-                    let d = null;
-                    if (datosValidos.length > 0) {
-                      const filasConNrcEsperado = datosValidos.filter(x => parseInt(x.nrc, 10) === parseInt(nrcEsperado, 10));
-                      d = filasConNrcEsperado.length > 0 ? filasConNrcEsperado[filasConNrcEsperado.length - 1] : datosValidos[datosValidos.length - 1];
-                    }
-
-                    const estadoTexto = (d?.estado ?? "").toLowerCase();
-                    const esPendiente = estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente");
-                    const esCancelado = estadoTexto === "becado" || estadoTexto.includes("cancelad") || estadoTexto.includes("adeuda") || estadoTexto === "inscrito";
+                    const datos = procesarDatosAlumno(res, nrcEsperado);
                     
-                    let statusConfig = {
-                      label: "🚨 Para Retiro",
-                      bg: "bg-amber-50",
-                      text: "text-amber-700",
-                      border: "border-amber-100",
-                      dot: "bg-amber-500"
-                    };
-
-                    if (d) {
-                      if (esPendiente) {
-                        statusConfig = { label: "⚠️ Pendiente", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-100", dot: "bg-rose-500" };
-                      } else if (esCancelado) {
-                        statusConfig = { label: "✅ Pagado", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-100", dot: "bg-emerald-500" };
+                    // Configuración de estado para mensualidad
+                    const getStatusConfig = (estadoInfo) => {
+                      if (estadoInfo.tipo === 'pendiente') {
+                        return { label: "⚠️ Pendiente", bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-100" };
+                      } else if (estadoInfo.tipo === 'cancelado') {
+                        return { label: "✅ Cancelado", bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-100" };
+                      } else if (estadoInfo.tipo === 'retiro') {
+                        return { label: "🚨 Retiro", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-100" };
                       }
-                    }
+                      return { label: estadoInfo.texto, bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-100" };
+                    };
+                    
+                    const statusMensualidad = getStatusConfig(datos.estadoMensualidad);
+                    const statusMatricula = datos.tieneMatricula ? getStatusConfig(datos.estadoMatricula) : null;
+                    
+                    // Fondo especial para becados
+                    const bgBase = datos.esBecado ? 'bg-cyan-50' : 'bg-slate-50';
+                    const bgHover = datos.esBecado ? 'group-hover:bg-cyan-100' : 'group-hover:bg-slate-100';
 
                     return (
-                      <tr key={j} className="group transition-all duration-300">
-                        <td className="px-6 py-2 bg-slate-50 rounded-l-2xl text-xs font-black text-slate-400 group-hover:bg-slate-100 transition-colors">{j + 1}</td>
-                        <td className="px-6 py-2 bg-slate-50 group-hover:bg-slate-100 transition-colors">
+                      <tr key={j} className={`group transition-all duration-300 ${datos.esBecado ? 'ring-2 ring-cyan-200 ring-inset rounded-2xl' : ''}`}>
+                        <td className={`px-6 py-2 ${bgBase} rounded-l-2xl text-xs font-black ${datos.esBecado ? 'text-cyan-600' : 'text-slate-400'} ${bgHover} transition-colors`}>
+                          {j + 1}
+                          {datos.esBecado && <span className="ml-1">🎓</span>}
+                        </td>
+                        <td className={`px-6 py-2 ${bgBase} ${bgHover} transition-colors`}>
                           <div className="flex flex-col">
-                            <span className="text-sm font-bold text-slate-800">{res?.nombreAlumno}</span>
+                            <span className={`text-sm font-bold ${datos.esBecado ? 'text-cyan-800' : 'text-slate-800'}`}>{res?.nombreAlumno}</span>
                             <span className="text-[14px] font-bold text-slate-400 font-mono">{res?.id}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 bg-slate-50 text-center group-hover:bg-slate-100 transition-colors">
-                          <span className={`text-xs font-black ${d?.nrc && parseInt(d.nrc) !== parseInt(nrcEsperado) ? "text-orange-500" : "text-slate-600"}`}>
-                            {d?.nrc || "-"}
+                        <td className={`px-6 py-4 ${bgBase} text-center ${bgHover} transition-colors`}>
+                          <span className={`text-xs font-black ${datos.nrc && parseInt(datos.nrc) !== parseInt(nrcEsperado) ? "text-orange-500" : "text-slate-600"}`}>
+                            {datos.nrc || "-"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 bg-slate-50 text-center group-hover:bg-slate-100 transition-colors">
+                        <td className={`px-6 py-4 ${bgBase} text-center ${bgHover} transition-colors`}>
                           <span className="text-[15px] font-bold text-blue-700 font-mono bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 tracking-wider">
                             {res?.codigoPago || "-"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 bg-slate-50 rounded-r-2xl group-hover:bg-slate-100 transition-colors">
-                          <div className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}>
-                            <span className="text-[13px] font-black uppercase tracking-wider">{statusConfig.label}</span>
+                        <td className={`px-6 py-4 ${bgBase} text-center ${bgHover} transition-colors ${!incluirMatricula[activeSheetIndex] ? 'rounded-r-2xl' : ''}`}>
+                          <div className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border ${statusMensualidad.bg} ${statusMensualidad.text} ${statusMensualidad.border}`}>
+                            <span className="text-[12px] font-black uppercase tracking-wider">{statusMensualidad.label}</span>
                           </div>
                         </td>
+                        {incluirMatricula[activeSheetIndex] && (
+                          <td className={`px-6 py-4 ${bgBase} rounded-r-2xl text-center ${bgHover} transition-colors`}>
+                            {statusMatricula ? (
+                              <div className={`flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl border ${statusMatricula.bg} ${statusMatricula.text} ${statusMatricula.border}`}>
+                                <span className="text-[12px] font-black uppercase tracking-wider">{statusMatricula.label}</span>
+                              </div>
+                            ) : (
+                              <span className="text-xs text-slate-400">-</span>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -693,6 +901,84 @@ function RenderCobros({ logs, loading }) {
                         <p className="text-xs text-slate-500 font-mono">{alumno.id}</p>
                       </div>
                       <span className="text-[10px] font-bold text-rose-600 bg-rose-100 px-2 py-1 rounded-lg">{alumno.hoja}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lista de Matrícula Pendiente */}
+      {mostrarModalMatriculaPendiente && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-2xl shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">📝</span>
+                <div>
+                  <h3 className="text-xl font-black text-purple-700">Matrícula Pendiente</h3>
+                  <p className="text-sm text-slate-500">{stats.listaMatriculaPendiente.length} alumnos en total</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalMatriculaPendiente(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {stats.listaMatriculaPendiente.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <span className="text-4xl">✅</span>
+                  <p className="mt-2 font-medium">No hay alumnos con matrícula pendiente</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {stats.listaMatriculaPendiente.map((alumno, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-purple-50 rounded-xl border border-purple-100">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{alumno.nombre}</p>
+                        <p className="text-xs text-slate-500 font-mono">{alumno.id}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded-lg">{alumno.hoja}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lista de Becados */}
+      {mostrarModalBecados && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] p-8 w-full max-w-2xl shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 max-h-[80vh] flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🎓</span>
+                <div>
+                  <h3 className="text-xl font-black text-cyan-700">Alumnos Becados</h3>
+                  <p className="text-sm text-slate-500">{stats.listaBecados.length} alumnos en total</p>
+                </div>
+              </div>
+              <button onClick={() => setMostrarModalBecados(false)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">✕</button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {stats.listaBecados.length === 0 ? (
+                <div className="text-center py-10 text-slate-400">
+                  <span className="text-4xl">📋</span>
+                  <p className="mt-2 font-medium">No hay alumnos becados</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {stats.listaBecados.map((alumno, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-cyan-50 rounded-xl border border-cyan-100">
+                      <div>
+                        <p className="font-bold text-slate-800 text-sm">{alumno.nombre}</p>
+                        <p className="text-xs text-slate-500 font-mono">{alumno.id}</p>
+                      </div>
+                      <span className="text-[10px] font-bold text-cyan-600 bg-cyan-100 px-2 py-1 rounded-lg">{alumno.hoja}</span>
                     </div>
                   ))}
                 </div>
