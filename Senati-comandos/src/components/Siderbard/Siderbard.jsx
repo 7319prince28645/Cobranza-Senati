@@ -29,93 +29,37 @@ import { NavProjects } from "./Nav-projects";
 
 // This is sample data.
 const data = {
-  user: {   
-    name: "shadcn",
-    email: "m@example.com",
+  user: {
+    name: "Administrador",
+    email: "admin@senati.pe",
     avatar: "/avatars/shadcn.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "SENATI",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
+      plan: "Cobranza",
+    }
   ],
   navMain: [
     {
-      title: "Playground",
+      title: "Módulos",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
         {
-          title: "History",
-          url: "/history",
+          title: "Cobros CIS",
+          url: "/",
         },
         {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
+          title: "Administrativo",
+          url: "/administrativo",
         },
       ],
     },
     {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
+      title: "Configuración",
       url: "#",
       icon: Settings2,
       items: [
@@ -123,38 +67,10 @@ const data = {
           title: "General",
           url: "#",
         },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
       ],
     },
   ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
-  ],
+  projects: [],
 };
 
 export function AppSidebar({ ...props }) {

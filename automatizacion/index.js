@@ -53,10 +53,12 @@ app.get("/automatizacion-stream", async (req, res) => {
 
 // Si se ejecuta directamente (no desde Electron)
 if (require.main === module) {
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     console.log(`✅ Server running at http://${HOST}:${PORT}`);
     console.log(`🚀 Servidor listo y actualizado: ${new Date().toLocaleString()}`);
   });
+  // Aumentar timeout a 10 minutos para dar tiempo al captcha manual
+  server.timeout = 600000;
 }
 
 // Exportar para uso en Electron

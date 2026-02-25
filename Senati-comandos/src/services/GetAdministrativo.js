@@ -55,6 +55,8 @@ async function GetAdministrativo(id, fechaInicio, fechaFin) {
         id,
         fechaInicio,
         fechaFin
+    }, {
+        timeout: 600000 // 10 minutos para captcha manual
     });
     
     // Validar trazabilidad de los datos recibidos

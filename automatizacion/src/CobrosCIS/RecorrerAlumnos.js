@@ -69,33 +69,35 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
           continue;
         }
 
-        // Extraer nombre del alumno (solo la primera vez)
-        if (!nombreAlumno) {
+        // Extraer nombre del alumno (solo la primera vez o si no se tiene)
+        if (!nombreAlumno || nombreAlumno === "Nombre no disponible") {
           try {
             nombreAlumno = await page
               .locator("#studentInfo li:has(strong:has-text('Nombre:'))")
               .evaluate((el) => el.innerText.replace("Nombre:", "").trim());
           } catch (e) {
             console.log(`  ⚠️ No se pudo extraer el nombre: ${e.message}`);
-            nombreAlumno = "Nombre no disponible";
+            if (!nombreAlumno) nombreAlumno = "Nombre no disponible";
           }
         }
 
-        // Extraer código de pago (solo la primera vez)
-        if (!codigoPago) {
-          try {
-            const codPayExists = await page.locator("div.codPayValue").count();
-            if (codPayExists > 0) {
-              codigoPago = await page
-                .locator("div.codPayValue")
-                .evaluate((el) => el.innerText.trim());
-            } else {
+        // Extraer código de pago
+        try {
+          const codPayExists = await page.locator("div.codPayValue").count();
+          if (codPayExists > 0) {
+            const codValue = await page.locator("div.codPayValue").evaluate((el) => el.innerText.trim());
+            // Si encontramos un código válido, lo guardamos. Si ya teníamos uno "N/A", lo sobrescribimos.
+            if (codValue && codValue !== "N/A") {
+              codigoPago = codValue;
+            } else if (!codigoPago) {
               codigoPago = "N/A";
             }
-          } catch (e) {
-            console.log(`  ⚠️ No se pudo extraer el código de pago: ${e.message}`);
+          } else if (!codigoPago) {
             codigoPago = "N/A";
           }
+        } catch (e) {
+          console.log(`  ⚠️ No se pudo extraer el código de pago: ${e.message}`);
+          if (!codigoPago) codigoPago = "N/A";
         }
 
         // --- Procesar filas de la tabla ---
@@ -143,6 +145,13 @@ async function RecorrerAlumnos(page, id, nombreHoja, year = new Date().getFullYe
 
         if (encontrado) {
           console.log(`  ✅ Cronograma encontrado en periodo ${termCode}`);
+          
+          // 🔄 Asegurar que el código de pago sea el de este periodo (el correcto)
+          try {
+            const finalCodPay = await page.locator("div.codPayValue").first().evaluate(el => el.innerText.trim());
+            if (finalCodPay) codigoPago = finalCodPay;
+          } catch (e) {}
+
           datosEncontrados = datos;
           periodoEncontrado = termCode;
           break; // 👈 Salir del loop si encontramos el cronograma

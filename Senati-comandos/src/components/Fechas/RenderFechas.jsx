@@ -7,24 +7,32 @@ import * as XLSX from "xlsx";
 import LogoSenati from "../../assets/Senati.png";
 
 function RenderFechas() {
-  const [id, setId] = useState("");
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
+  const [id, setId] = useState(() => localStorage.getItem("lastAdminInstructorId") || "");
+  const [fechaInicio, setFechaInicio] = useState(() => {
+    const d = new Date();
+    // Primer día del mes actual en formato YYYY-MM-DD
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  });
+  const [fechaFin, setFechaFin] = useState(() => new Date().toISOString().split('T')[0]);
   const [loading, setLoading] = useState(false);
   const [resultados, setResultados] = useState([]);
   const pdfRef = useRef();
 
   const handleConsultar = async () => {
-    if (!id || !fechaInicio || !fechaFin) {
+    const cleanId = id.trim();
+    if (!cleanId || !fechaInicio || !fechaFin) {
       alert("Por favor completa todos los campos.");
       return;
     }
 
+    // Guardar el ID para conveniencia del usuario
+    localStorage.setItem("lastAdminInstructorId", cleanId);
+    
     setLoading(true);
     setResultados([]);
 
     try {
-      const response = await GetAdministrativo(id, fechaInicio, fechaFin);
+      const response = await GetAdministrativo(cleanId, fechaInicio, fechaFin);
       setResultados(response || []);
     } catch (error) {
       console.error("❌ Error:", error);
@@ -263,47 +271,113 @@ function RenderFechas() {
                 </tr>
               </thead>
               <tbody>
-                {calendarioOrdenadoDesc?.map((diaObj, i) => {
-                  const diaAnterior = calendarioOrdenadoDesc[i - 1]?.dia;
-                  const esNuevoDia = diaObj.dia !== diaAnterior;
+                {(() => {
+                  const rows = [];
+                  let currentWeekId = null;
+                  let weekTotal = 0;
 
-                  // Variable estática para alternar colores por grupo de día
-                  // (se mantiene fuera del renderizado de filas)
-                  if (i === 0) {
-                    // Primer elemento
-                    window.__colorFlag = true;
-                  } else if (esNuevoDia) {
-                    // Cambia el color cuando cambia el día
-                    window.__colorFlag = !window.__colorFlag;
-                  }
+                  calendarioOrdenadoDesc.forEach((diaObj, i) => {
+                    const [dd, mm, yyyy] = diaObj.dia.split("/").map(Number);
+                    const fecha = new Date(yyyy, mm - 1, dd);
+                    const day = fecha.getDay() || 7;
+                    const lunes = new Date(fecha);
+                    lunes.setDate(fecha.getDate() - day + 1);
+                    const weekId = lunes.toLocaleDateString('es-PE');
 
-                  const colorFondo = window.__colorFlag
-                    ? "bg-slate-200"
-                    : "bg-white";
+                    // Si cambia la semana y no es el primero, insertar fila de total
+                    if (currentWeekId && currentWeekId !== weekId) {
+                      const esExcesoSemanal = weekTotal > 19;
+                      rows.push(
+                        <tr key={`week-total-${currentWeekId}`} className={`${esExcesoSemanal ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'} font-bold border-y-2`}>
+                          <td colSpan="6" className={`border border-gray-300 p-2 text-right ${esExcesoSemanal ? 'text-orange-800' : 'text-blue-800'} uppercase text-[10px] tracking-wider`}>
+                            Total Semanal ({currentWeekId})
+                            {esExcesoSemanal && (
+                              <span className="ml-2 text-[9px] bg-orange-200 text-orange-900 px-2 py-0.5 rounded-full animate-pulse">
+                                🚨 REVISAR: SEMANA &gt; 19H
+                              </span>
+                            )}
+                          </td>
+                          <td className={`border border-gray-300 p-2 text-center ${esExcesoSemanal ? 'text-orange-900' : 'text-blue-900'} text-[11px]`}>
+                            {Number(weekTotal.toFixed(2))}h
+                          </td>
+                          <td className={`border border-gray-300 p-1 align-middle text-[9px] italic ${esExcesoSemanal ? 'text-orange-600' : 'text-gray-400'}`}>
+                            {esExcesoSemanal ? "Debe tener clases de Lunes a Sábado" : ""}
+                          </td>
+                        </tr>
+                      );
+                      weekTotal = 0;
+                    }
 
-                  return (
-                    <tr key={i} className={`text-center ${colorFondo}`}>
-                      <td className="border border-gray-300 p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
-                        {diaObj?.cursos}
-                      </td>
-                      <td className="border border-gray-300 p-1 align-middle">
-                        {diaObj?.dia}
-                      </td>
-                      <td className="border border-gray-300 p-1 align-middle">
-                        {diaObj?.inicio}
-                      </td>
-                      <td className="border border-gray-300 p-1 align-middle"></td>
-                      <td className="border border-gray-300 p-1 align-middle">
-                        {diaObj?.fin}
-                      </td>
-                      <td className="border border-gray-300 p-1 align-middle"></td>
-                      <td className="border border-gray-300 p-1 align-middle">
-                        {diaObj?.totalHoras ? Number(diaObj.totalHoras.toFixed(4)) : "-"}
-                      </td>
-                      <td className="border border-gray-300 p-1 align-middle"></td>
-                    </tr>
-                  );
-                })}
+                    currentWeekId = weekId;
+                    weekTotal += diaObj.totalHoras || 0;
+
+                    const diaAnterior = calendarioOrdenadoDesc[i - 1]?.dia;
+                    const esNuevoDia = diaObj.dia !== diaAnterior;
+
+                    if (i === 0) {
+                      window.__colorFlag = true;
+                    } else if (esNuevoDia) {
+                      window.__colorFlag = !window.__colorFlag;
+                    }
+
+                    const colorFondo = window.__colorFlag ? "bg-slate-50" : "bg-white";
+                    const esExceso = diaObj.totalHoras > 7;
+
+                    rows.push(
+                      <tr key={`row-${i}`} className={`text-center ${colorFondo} ${esExceso ? 'bg-red-50/50' : ''}`}>
+                        <td className="border border-gray-300 p-1 text-[11px] font-medium text-left break-words max-w-[220px] whitespace-pre-wrap align-middle">
+                          {diaObj?.cursos}
+                        </td>
+                        <td className="border border-gray-300 p-1 align-middle">
+                          {diaObj?.dia}
+                        </td>
+                        <td className="border border-gray-300 p-1 align-middle">
+                          {diaObj?.inicio}
+                        </td>
+                        <td className="border border-gray-300 p-1 align-middle"></td>
+                        <td className="border border-gray-300 p-1 align-middle">
+                          {diaObj?.fin}
+                        </td>
+                        <td className="border border-gray-300 p-1 align-middle"></td>
+                        <td className={`border border-gray-300 p-1 align-middle ${esExceso ? 'text-red-600 font-black' : ''}`}>
+                          {diaObj?.totalHoras ? Number(diaObj.totalHoras.toFixed(4)) : "-"}
+                          {esExceso && (
+                            <div className="text-[9px] text-red-500 font-black leading-none mt-1 animate-pulse">
+                              ⚠️ &gt; 7H
+                            </div>
+                          )}
+                        </td>
+                        <td className="border border-gray-300 p-1 align-middle text-[10px] italic text-red-500 font-medium">
+                          {esExceso ? "Supera límite diario (7h)" : ""}
+                        </td>
+                      </tr>
+                    );
+
+                    // Si es el último, insertar el último total de semana
+                    if (i === calendarioOrdenadoDesc.length - 1) {
+                      const esExcesoSemanal = weekTotal > 19;
+                      rows.push(
+                        <tr key={`week-total-final`} className={`${esExcesoSemanal ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'} font-bold border-y-2`}>
+                          <td colSpan="6" className={`border border-gray-300 p-2 text-right ${esExcesoSemanal ? 'text-orange-800' : 'text-blue-800'} uppercase text-[10px] tracking-wider`}>
+                            Total Semanal ({currentWeekId})
+                            {esExcesoSemanal && (
+                              <span className="ml-2 text-[9px] bg-orange-200 text-orange-900 px-2 py-0.5 rounded-full animate-pulse">
+                                🚨 REVISAR: SEMANA &gt; 19H
+                              </span>
+                            )}
+                          </td>
+                          <td className={`border border-gray-300 p-2 text-center ${esExcesoSemanal ? 'text-orange-900' : 'text-blue-900'} text-[11px]`}>
+                            {Number(weekTotal.toFixed(2))}h
+                          </td>
+                          <td className={`border border-gray-300 p-1 align-middle text-[9px] italic ${esExcesoSemanal ? 'text-orange-600' : 'text-gray-400'}`}>
+                            {esExcesoSemanal ? "Debe tener clases de Lunes a Sábado" : ""}
+                          </td>
+                        </tr>
+                      );
+                    }
+                  });
+                  return rows;
+                })()}
               </tbody>
             </table>
           </>

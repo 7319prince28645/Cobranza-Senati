@@ -1,14 +1,18 @@
 // FetchReportes.js
-const { chromium } = require("playwright");
+const { chromium } = require("playwright-extra");
+const stealth = require("puppeteer-extra-plugin-stealth")();
 const login = require("../CobrosCIS/login");
 const { generateRandomDigits } = require("../CobrosCIS/GeneratoRandomDigits");
 const { extraerCalendario } = require("./extract/extractCalendar");
 const { agruparPorDia, generarResumenPorCursoConHorarioFrecuente } = require("./summarize/summarize");
 const { openReportPage, submitFormAndShowCalendar } = require("./helpers/navigation");
 
+// Aplicar el plugin de sigilo
+chromium.use(stealth);
+
 async function FetchReportes(id, fechaInicio, fechaFin) {
   const browser = await chromium.launch({
-    headless: true,
+    headless: false,
     slowMo: 50,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
