@@ -8,18 +8,7 @@ router.post('/reportes', async (req, res) => {
 
     const reportes = await FetchReportes(id, fechaInicio, fechaFin);
     
-    // Aplicar verificación de trazabilidad al calendario
-    if (reportes.calendario && Array.isArray(reportes.calendario)) {
-      console.log('🔍 Aplicando verificación de trazabilidad a calendario...');
-      const resultado = procesarYValidarEstudiantes(
-        reportes.calendario,
-        { aplicarCorrecciones: true, verbose: true }
-      );
-      reportes.calendario = resultado.estudiantes;
-      reportes._trazabilidad = resultado.reporte;
-    }
-    
-    console.log('✅ Reportes procesados con verificación de trazabilidad');
+    console.log('✅ Reportes procesados con éxito');
     res.json(reportes);
 
     

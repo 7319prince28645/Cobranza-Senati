@@ -23,8 +23,8 @@ async function login(page, username, password) {
   try {
     // Esperar y rellenar usuario
     console.log("⏳ Esperando campo de usuario...");
-    await userInput.waitFor({ state: "visible", timeout: 60000 });
-    await page.waitForTimeout(1500); 
+    await userInput.waitFor({ state: "visible", timeout: 45000 });
+    await page.waitForTimeout(500); 
     await userInput.fill(username);
     console.log("✅ Usuario ingresado");
 
@@ -63,12 +63,23 @@ async function login(page, username, password) {
       }
     } catch (e) {}
 
+    // Esperar a que la URL se estabilice en Experience
+    console.log("⏳ Esperando estabilización de Experience...");
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(3000); 
+
     // Esperamos directamente al botón de Académicos en la página principal
-    console.log("⏳ Esperando carga de la página principal (Botón Académicos)...");
-    const academicosBtn = page.locator('button:has-text("Académicos"), [role="tab"]:has-text("Académicos"), #Académicos_tab, a:has-text("Académicos")').first();
+    console.log("⏳ Buscando botón Académicos...");
+    const academicosBtn = page.locator('button:has-text("Académicos"), [role="tab"]:has-text("Académicos"), #Académicos_tab, a:has-text("Académicos"), span:has-text("Académicos")').first();
     
-    await academicosBtn.waitFor({ state: "visible", timeout: 90000 });
-    console.log("✅ Página principal cargada");
+    try {
+      await academicosBtn.waitFor({ state: "visible", timeout: 60000 });
+      console.log("✅ Botón Académicos encontrado");
+    } catch (e) {
+      console.warn("⚠️ No se vio el botón Académicos, intentando refrescar...");
+      await page.reload({ waitUntil: "load" });
+      await academicosBtn.waitFor({ state: "visible", timeout: 30000 });
+    }
 
     await page.waitForTimeout(2000); 
 
@@ -81,12 +92,12 @@ async function login(page, username, password) {
 
     console.log("✅ Login completado con éxito");
   } catch (error) {
-    console.error("❌ Error durante el proceso de login:", error.message);
-    try {
-      await page.screenshot({ path: `error_login_${Date.now()}.png` });
-      console.log("📸 Captura de pantalla de error guardada.");
-    } catch (e) {}
-    throw new Error(`Error en login: ${error.message}`);
+    if (error.message.includes('Target page, context or browser has been closed')) {
+      console.error("❌ El navegador se cerró inesperadamente durante el login.");
+    } else {
+      console.error("❌ Error durante el proceso de login:", error.message);
+    }
+    throw error;
   }
 }
 

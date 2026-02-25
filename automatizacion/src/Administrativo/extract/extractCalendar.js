@@ -6,9 +6,16 @@ const {
 } = require("../helpers/utils");
 
 async function extraerCalendario(page, fechaReferencia) {
+  // Asegurar que el calendario esté presente
+  await page.waitForSelector("table.t12StandardCalendar", { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(500);
+
   const tablas = await page.$$eval("table.t12StandardCalendar", (els) =>
     els.map((el) => el.innerHTML)
-  );
+  ).catch(err => {
+    console.warn("⚠️ Error en $$eval de calendario, reintentando una vez...", err.message);
+    return page.$$eval("table.t12StandardCalendar", (els) => els.map((el) => el.innerHTML));
+  });
   const calendario = [];
 
   tablas.forEach((html) => {

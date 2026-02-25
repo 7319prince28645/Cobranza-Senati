@@ -7,16 +7,36 @@ const { GeneralizarCursos } = require("../helpers/utils");
  * { dia, cursos, inicio, fin, totalHoras, sesiones }
  */
 function agruparPorDia(sesiones, gapMinutes = 30) {
-  // Normalizar y ordenar por día + hora inicio
-  const sesionesOrdenadas = sesiones
+  // 1. De-duplicar sesiones idénticas (causadas por overlap de meses en la extracción)
+  const sesionesUnicas = [];
+  const visto = new Set();
+  
+  sesiones.forEach(s => {
+    // Crear una llave única para la sesión (incluyendo aula opcionalmente)
+    const key = `${s.dia}|${s.curso}|${s.horarioInicio}|${s.horarioFin}|${s.aula}`;
+    if (!visto.has(key)) {
+      visto.add(key);
+      sesionesUnicas.push(s);
+    }
+  });
+
+  // Helper para parsear fecha DD/MM/YYYY
+  const parseDateToTime = (d) => {
+    if (!d) return 0;
+    const [dd, mm, yyyy] = d.split("/").map(Number);
+    return new Date(yyyy, mm - 1, dd).getTime();
+  };
+
+  // 2. Normalizar y ordenar por día (cronológico) + hora inicio
+  const sesionesOrdenadas = sesionesUnicas
     .map((s) => ({
       ...s,
+      _timestamp: parseDateToTime(s.dia),
       horarioInicio: s.horarioInicio || null,
       horarioFin: s.horarioFin || null,
     }))
     .sort((a, b) => {
-      if (a.dia < b.dia) return -1;
-      if (a.dia > b.dia) return 1;
+      if (a._timestamp !== b._timestamp) return a._timestamp - b._timestamp;
       if (!a.horarioInicio && !b.horarioInicio) return 0;
       if (!a.horarioInicio) return 1;
       if (!b.horarioInicio) return -1;
@@ -71,14 +91,14 @@ function agruparPorDia(sesiones, gapMinutes = 30) {
         fin: b.fin || "",
         totalHoras: b.totalHoras,
         sesiones: b.sesionesCount,
+        _timestamp: parseDateToTime(dia)
       });
     });
   });
 
   // Orden final por fecha y hora
   resultado.sort((a, b) => {
-    if (a.dia < b.dia) return -1;
-    if (a.dia > b.dia) return 1;
+    if (a._timestamp !== b._timestamp) return a._timestamp - b._timestamp;
     if (!a.inicio && !b.inicio) return 0;
     if (!a.inicio) return 1;
     if (!b.inicio) return -1;

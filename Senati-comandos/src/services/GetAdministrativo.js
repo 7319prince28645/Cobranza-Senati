@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getApiUrl } from "./apiConfig";
 
 /**
  * Valida la coherencia de datos del calendario recibido
@@ -49,7 +50,7 @@ const validarCoherenciaCalendario = (calendario) => {
 
 async function GetAdministrativo(id, fechaInicio, fechaFin) {
 
-    const urlBase = import.meta.env.VITE_URL_API_LOCAL;
+    const urlBase = getApiUrl();
 
     const response = await axios.post(`${urlBase}/administrativo/reportes`, {
         id,
@@ -59,32 +60,9 @@ async function GetAdministrativo(id, fechaInicio, fechaFin) {
         timeout: 600000 // 10 minutos para captcha manual
     });
     
-    // Validar trazabilidad de los datos recibidos
+    // Logging simple de éxito
     if (response.data) {
-      console.log('🔍 [GetAdministrativo] Verificando trazabilidad de datos...');
-      
-      // Verificar calendario
-      if (response.data.calendario) {
-        const problemas = validarCoherenciaCalendario(response.data.calendario);
-        
-        if (problemas.length > 0) {
-          console.warn(`⚠️ [TRAZABILIDAD] Se detectaron ${problemas.length} inconsistencias:`);
-          problemas.slice(0, 5).forEach(p => {
-            console.warn(`   - ID ${p.id || 'N/A'}: ${p.mensaje}`);
-          });
-          
-          // Agregar problemas al response para mostrar en UI
-          response.data._problemasTrazabilidad = problemas;
-        } else {
-          console.log('✅ [TRAZABILIDAD] Datos validados correctamente');
-        }
-      }
-      
-      // Mostrar información del reporte de trazabilidad del backend si existe
-      if (response.data._trazabilidad) {
-        const t = response.data._trazabilidad;
-        console.log(`📊 [TRAZABILIDAD BACKEND] Válidos: ${t.validos}, Errores: ${t.conErrores}, Corregidos: ${t.corregidosAutomaticamente}`);
-      }
+      console.log('✅ [GetAdministrativo] Datos recibidos con éxito');
     }
 
     return response;

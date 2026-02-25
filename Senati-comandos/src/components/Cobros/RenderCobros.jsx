@@ -143,7 +143,7 @@ function RenderCobros({ logs, loading }) {
           listaRetiro.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
         } else {
           const estadoTexto = (mensualidad?.estado ?? "").toLowerCase();
-          if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+          if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente") || estadoTexto.includes("adeuda")) {
             pendientes++;
             listaDeuda.push({ nombre: res?.nombreAlumno, id: res?.id, hoja: nombreHoja });
           } else {
@@ -195,10 +195,10 @@ function RenderCobros({ logs, loading }) {
       if (conceptoTexto.includes('becado') || estadoTexto.includes('becado')) {
         return { tipo: 'cancelado', texto: 'Becado' };
       }
-      if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+      if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente") || estadoTexto.includes("adeuda")) {
         return { tipo: 'pendiente', texto: 'Pendiente' };
       }
-      if (estadoTexto.includes("cancelad") || estadoTexto.includes("adeuda") || estadoTexto === "inscrito") {
+      if (estadoTexto.includes("cancelad") || estadoTexto === "inscrito") {
         return { tipo: 'cancelado', texto: 'Cancelado' };
       }
       return { tipo: 'otro', texto: dato?.estado || 'Desconocido' };
@@ -572,7 +572,7 @@ function RenderCobros({ logs, loading }) {
                   
                   if (mensualidad) {
                     const estadoTexto = (mensualidad?.estado ?? "").toLowerCase();
-                    if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente")) {
+                    if (estadoTexto === "pendiente de pago" || estadoTexto.includes("pendiente") || estadoTexto.includes("adeuda")) {
                       pendientesHoja++;
                     } else {
                       pagados++;

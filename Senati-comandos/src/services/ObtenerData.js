@@ -1,5 +1,7 @@
+import { getApiUrl } from "./apiConfig";
+
 export const ImportDataStream = (onMessage, onDone, year = new Date().getFullYear()) => {
-  const urlApi = import.meta.env.VITE_URL_API_LOCAL;
+  const urlApi = getApiUrl();
   console.log("🔌 Conectando a stream:", `${urlApi}/automatizacion-stream?year=${year}`);
   
   const eventSource = new EventSource(`${urlApi}/automatizacion-stream?year=${year}`);

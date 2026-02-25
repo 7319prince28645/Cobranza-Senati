@@ -7,26 +7,33 @@ import * as XLSX from "xlsx";
 import LogoSenati from "../../assets/Senati.png";
 
 function RenderFechas() {
-  const [id, setId] = useState(() => localStorage.getItem("lastAdminInstructorId") || "");
+  const [searchId, setSearchId] = useState(() => localStorage.getItem("lastAdminInstructorId") || "");
   const [fechaInicio, setFechaInicio] = useState(() => {
+    const saved = localStorage.getItem("lastAdminFechaInicio");
+    if (saved) return saved;
     const d = new Date();
-    // Primer día del mes actual en formato YYYY-MM-DD
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   });
-  const [fechaFin, setFechaFin] = useState(() => new Date().toISOString().split('T')[0]);
+  const [fechaFin, setFechaFin] = useState(() => {
+    const saved = localStorage.getItem("lastAdminFechaFin");
+    if (saved) return saved;
+    return new Date().toISOString().split('T')[0];
+  });
   const [loading, setLoading] = useState(false);
   const [resultados, setResultados] = useState([]);
   const pdfRef = useRef();
 
   const handleConsultar = async () => {
-    const cleanId = id.trim();
-    if (!cleanId || !fechaInicio || !fechaFin) {
-      alert("Por favor completa todos los campos.");
+    const cleanId = searchId.trim();
+    if (!cleanId) {
+      alert("Por favor ingrese un ID");
       return;
     }
 
-    // Guardar el ID para conveniencia del usuario
+    // Guardar el ID y fechas para conveniencia del usuario
     localStorage.setItem("lastAdminInstructorId", cleanId);
+    localStorage.setItem("lastAdminFechaInicio", fechaInicio);
+    localStorage.setItem("lastAdminFechaFin", fechaFin);
     
     setLoading(true);
     setResultados([]);
@@ -135,10 +142,10 @@ function RenderFechas() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print-hidden">
         <input
           type="text"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2"
-          placeholder="ID del Instructor"
+          placeholder="ID Instructor"
+          value={searchId}
+          onChange={(e) => setSearchId(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 w-48"
         />
         <input
           type="date"
@@ -223,22 +230,25 @@ function RenderFechas() {
                 <div className="my-4" />
                 <div>
                   <span className="font-semibold">TRABAJADOR:</span>{" "}
-                  {resultados?.data?.nombre}
+                  {resultados?.data?.nombre || resultados?.data?.nombreInstructor || "INSTRUCTOR SENATI"}
                 </div>
                 <div>
                   <span className="font-semibold">ID:</span>{" "}
-                  {resultados?.data?.id || "------------------"}
+                  {resultados?.data?.id || resultados?.data?.idInstructor || searchId || "------------------"}
                 </div>
 
                 <div>
                   <span className="font-semibold">PUESTO:</span> INSTRUCTOR JP
                 </div>
               </div>
-              <div className="flex flex-col justify-around">
-                <p>MES:</p>
+              <div className="flex flex-col justify-center space-y-2">
+                <div className="flex gap-2">
+                  <span className="font-semibold">PERIODO:</span>
+                  <span className="uppercase">{fechaInicio.split('-').reverse().join('/')} AL {fechaFin.split('-').reverse().join('/')}</span>
+                </div>
                 <div>
-                  {" "}
-                  <span>HORARIO:</span>
+                  <span className="font-semibold">HORARIO:</span>
+                  <span className="ml-2 italic text-gray-500 text-[10px]">VER DETALLE EN TABLA</span>
                 </div>
               </div>
             </div>
@@ -275,6 +285,7 @@ function RenderFechas() {
                   const rows = [];
                   let currentWeekId = null;
                   let weekTotal = 0;
+                  let currentColorFlag = true;
 
                   calendarioOrdenadoDesc.forEach((diaObj, i) => {
                     const [dd, mm, yyyy] = diaObj.dia.split("/").map(Number);
@@ -314,13 +325,11 @@ function RenderFechas() {
                     const diaAnterior = calendarioOrdenadoDesc[i - 1]?.dia;
                     const esNuevoDia = diaObj.dia !== diaAnterior;
 
-                    if (i === 0) {
-                      window.__colorFlag = true;
-                    } else if (esNuevoDia) {
-                      window.__colorFlag = !window.__colorFlag;
+                    if (esNuevoDia && i !== 0) {
+                      currentColorFlag = !currentColorFlag;
                     }
 
-                    const colorFondo = window.__colorFlag ? "bg-slate-50" : "bg-white";
+                    const colorFondo = currentColorFlag ? "bg-slate-50" : "bg-white";
                     const esExceso = diaObj.totalHoras > 7;
 
                     rows.push(
