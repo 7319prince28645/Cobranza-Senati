@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const main = require("./src/CobrosCIS/main");
 const FetchReportesAdministrativo = require("./src/Administrativo");
+const AcademicoModule = require("./src/Academico");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ app.use(cors({
 
 // ✅ Montar endpoints
 app.use("/administrativo", FetchReportesAdministrativo);
+app.use("/academico", AcademicoModule);
 
 // ✅ Endpoint con streaming SSE
 app.get("/automatizacion-stream", async (req, res) => {

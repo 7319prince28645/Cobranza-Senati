@@ -1,0 +1,177 @@
+{
+  "cookies": [
+    {
+      "name": "JSESSIONID",
+      "value": "9A6F1B360841CB4A4D1C19AFD0DABEA386DF62CE0BDD0709CA14C362FDF8C76CC95A7A9101BB862142101B5C1128D8A922E9D1A4CE76FD367797404D1D0E543726066719EB955234629EBDA0599D98F0AC9DAF102B3437DB94EEA4AA675C2E061EB5726C5190EB81ACEFEEFED6408E9FE576DFFDE12D6C79E2C8B4AE44935816",
+      "domain": "login.senati.edu.pe",
+      "path": "/authenticationendpoint",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "JSESSIONID",
+      "value": "4765F9A3D6010FC3306951158F97F942",
+      "domain": "go.senati.edu.pe",
+      "path": "/ssomanager",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ethosx-saml-session-id",
+      "value": "ed5acdd7-e157-4305-b0a5-d564b352e270",
+      "domain": "eee-api.10005.elluciancloud.com",
+      "path": "/saml-prod",
+      "expires": 1775072039.185716,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "SESSID",
+      "value": "NTIxTkIwMTk2OTQy",
+      "domain": "go.senati.edu.pe",
+      "path": "/PROD",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "CASCADE",
+      "value": "SET",
+      "domain": "go.senati.edu.pe",
+      "path": "/PROD",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "CASTGC",
+      "value": "TGT-a1e5cee5d6284ee0b15567bd45ffe95d-login.senati.edu.pe",
+      "domain": "login.senati.edu.pe",
+      "path": "/cas",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "sndaetis-exp.sid",
+      "value": "s%3AC4F1aqZo6PFjQYPq7u9jinTq-PsJEqcw.43VVD%2Bng3vMvz7xIe1AqRjKzALY%2BNiMNYSyPkFymYXM",
+      "domain": "experience.elluciancloud.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "commonAuthId",
+      "value": "bf03f59e-2805-4cc2-b87f-26712d2c8638",
+      "domain": "login.senati.edu.pe",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "samlssoTokenId",
+      "value": "9b566780-c28a-4f40-8f06-f3d52ba80b10",
+      "domain": "login.senati.edu.pe",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ga",
+      "value": "GA1.1.126795100.1774467242",
+      "domain": ".elluciancloud.com",
+      "path": "/",
+      "expires": 1809027243.515725,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_0J923VB4XG",
+      "value": "GS2.1.s1774467243$o1$g1$t1774467249$j54$l0$h0",
+      "domain": ".elluciancloud.com",
+      "path": "/",
+      "expires": 1809027249.384558,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_6DEQN0KVM5",
+      "value": "GS2.1.s1774467242$o1$g1$t1774467249$j53$l0$h0",
+      "domain": ".elluciancloud.com",
+      "path": "/",
+      "expires": 1809027249.398124,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "IDMSESSID",
+      "value": "6C6E6053C056DBEEBD4BC5CCD56ACF6A6233B90F03C0FDDDE65791CACCD7B8FC93633B4336361145905F56FCD00DDDE840795EBCB67A45E4906FABD293408572",
+      "domain": ".senati.edu.pe",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sghe_magellan_username",
+      "value": "MDAwMTk2OTQy",
+      "domain": "go.senati.edu.pe",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "sghe_magellan_locale",
+      "value": "es_US",
+      "domain": "go.senati.edu.pe",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://experience.elluciancloud.com",
+      "localStorage": [
+        {
+          "name": "__mpq_7245c256f39c0e767237cb15c8587a8b_pp",
+          "value": "[]"
+        },
+        {
+          "name": "__mp_opt_in_out_7245c256f39c0e767237cb15c8587a8b",
+          "value": "1"
+        },
+        {
+          "name": "__mpq_7245c256f39c0e767237cb15c8587a8b_ev",
+          "value": "[]"
+        },
+        {
+          "name": "mp_7245c256f39c0e767237cb15c8587a8b_mixpanel",
+          "value": "{\"distinct_id\":\"623f312a81d48473840e35ef9b5d102336bf5adf\",\"$device_id\":\"a3f43cdf-deab-4726-a16e-5c9756b29615\",\"$initial_referrer\":\"https://eee-api.10005.elluciancloud.com/\",\"$initial_referring_domain\":\"eee-api.10005.elluciancloud.com\",\"__mps\":{},\"__mpso\":{},\"__mpus\":{},\"__mpa\":{},\"__mpu\":{},\"__mpr\":[],\"__mpap\":[],\"platform\":\"Experience\",\"tenant_label\":\"Production\",\"is_mobile_app\":false,\"app_version\":\"\",\"experience_locale\":\"en-US\",\"tenant_alias\":\"sndaetis\",\"navigator_language\":\"es-419\",\"$user_id\":\"623f312a81d48473840e35ef9b5d102336bf5adf\",\"account_id\":[\"001G000000oShzKIAS\"],\"tenant_id\":[\"fb8cdf9f-d947-45f6-bbc3-e6ad0494df0a\"]}"
+        }
+      ]
+    }
+  ]
+}

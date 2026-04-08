@@ -21,6 +21,12 @@ async function extraerCalendario(page, fechaReferencia) {
   tablas.forEach((html) => {
     const $ = cheerio.load(html);
     $("tr.formRegionHeader td[class*='formRegionBody']").each((j, celda) => {
+      // Evitar extraer días que no pertenecen al mes actual (días grises en los bordes)
+      // para evitar duplicidad al navegar entre meses.
+      if ($(celda).hasClass("t12CalendarNonMonthDay")) {
+        return;
+      }
+
       const diaTexto = $(celda).text().trim().split("\n")[0];
       const diaNumerico = parseInt(diaTexto);
       if (isNaN(diaNumerico)) return; // salta celdas no válidas
@@ -45,7 +51,8 @@ async function extraerCalendario(page, fechaReferencia) {
             horarioFin: horarioFin || null,
             horasPedagogicas: calcularHorasPedagogicas(
               horarioInicio,
-              horarioFin
+              horarioFin,
+              cursoRaw
             ),
           });
         });

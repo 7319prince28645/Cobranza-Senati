@@ -50,11 +50,20 @@ async function submitFormAndShowCalendar(page, id, fechaInicio, fechaFin) {
   await page.fill('input[name="P9_IDS"]', id).catch(() => {});
   
   // Limpiar y llenar fechas (a veces APEX tiene comportamientos extraños con .fill)
+  const formatToApex = (isoDate) => {
+    if (!isoDate) return "";
+    const [y, m, d] = isoDate.split("-");
+    return `${d}/${m}/${y}`;
+  };
+
+  const fInicioApex = formatToApex(fechaInicio);
+  const fFinApex = formatToApex(fechaFin);
+
   await page.fill('input[name="P9_FECHA_INI"]', "").catch(() => {});
-  await page.fill('input[name="P9_FECHA_INI"]', fechaInicio).catch(() => {});
+  await page.fill('input[name="P9_FECHA_INI"]', fInicioApex).catch(() => {});
   
   await page.fill('input[name="P9_FECHA_FIN"]', "").catch(() => {});
-  await page.fill('input[name="P9_FECHA_FIN"]', fechaFin).catch(() => {});
+  await page.fill('input[name="P9_FECHA_FIN"]', fFinApex).catch(() => {});
   
   // Clic en enviar y esperar navegación
   console.log("🚀 Enviando formulario...");

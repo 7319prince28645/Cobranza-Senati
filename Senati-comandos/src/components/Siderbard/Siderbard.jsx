@@ -59,6 +59,17 @@ const data = {
       ],
     },
     {
+      title: "Académico",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Verificar Nota de sustentación",
+          url: "/academico/verificar-nota",
+        },
+      ],
+    },
+    {
       title: "Configuración",
       url: "#",
       icon: Settings2,

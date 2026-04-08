@@ -1,5 +1,5 @@
 // summarize/summarize.js
-const { GeneralizarCursos } = require("../helpers/utils");
+const { GeneralizarCursos, normalizeText } = require("../helpers/utils");
 
 /**
  * Agrupa sesiones por día pero no fusiona bloques separados por más de gapMinutes (por defecto 30).
@@ -13,7 +13,7 @@ function agruparPorDia(sesiones, gapMinutes = 30) {
   
   sesiones.forEach(s => {
     // Crear una llave única para la sesión (incluyendo aula opcionalmente)
-    const key = `${s.dia}|${s.curso}|${s.horarioInicio}|${s.horarioFin}|${s.aula}`;
+    const key = `${s.dia}|${normalizeText(s.curso)}|${s.horarioInicio}|${s.horarioFin}|${normalizeText(s.aula)}`;
     if (!visto.has(key)) {
       visto.add(key);
       sesionesUnicas.push(s);
