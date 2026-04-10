@@ -1,6 +1,6 @@
 import { getApiUrl } from "./apiConfig";
 
-export const ImportDataStream = (onMessage, onDone, year = new Date().getFullYear()) => {
+export const ImportDataStream = (onMessage, onDone, year = new Date().getFullYear(), onProgress) => {
   const urlApi = getApiUrl();
   console.log("🔌 Conectando a stream:", `${urlApi}/automatizacion-stream?year=${year}`);
   
@@ -14,6 +14,13 @@ export const ImportDataStream = (onMessage, onDone, year = new Date().getFullYea
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
+      
+      // Manejar mensajes de progreso (barra de carga)
+      if (data.progress && onProgress) {
+        onProgress(data.progress);
+        return;
+      }
+      
       onMessage(data); // 👈 Aquí se lo mandas a React
 
       if (data.done) { // 👈 Cuando el backend mande { done: true }

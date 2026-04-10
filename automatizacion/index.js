@@ -39,7 +39,17 @@ app.get("/automatizacion-stream", async (req, res) => {
     const year = parseInt(req.query.year, 10) || new Date().getFullYear();
     
     await main((msg) => {
-      res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      // Diferenciar entre progreso y resultados de hojas
+      if (msg?.pct !== undefined) {
+        // Es un mensaje de progreso (barra de carga)
+        res.write(`data: ${JSON.stringify({ progress: msg })}\n\n`);
+      } else if (msg?.hoja) {
+        // Es un resultado de hoja (datos de alumnos)
+        res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      } else {
+        // Mensaje de texto simple
+        res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      }
     }, year);
     
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);

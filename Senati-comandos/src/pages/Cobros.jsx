@@ -9,6 +9,7 @@ const CobroViewer = () => {
   const [showYearModal, setShowYearModal] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [started, setStarted] = useState(false);
+  const [progress, setProgress] = useState({ pct: 0, text: "" });
 
   const iniciarProcesoCobros = () => {
     // Validar año
@@ -22,6 +23,7 @@ const CobroViewer = () => {
     setStarted(true);
     setLogs([]);
     setLoading(true);
+    setProgress({ pct: 0, text: "Preparando conexión..." });
 
     const es = ImportDataStream(
       (data) => {
@@ -34,8 +36,13 @@ const CobroViewer = () => {
       () => {
         console.log("✅ Proceso completado");
         setLoading(false);
+        setProgress({ pct: 100, text: "✅ ¡Proceso completado!" });
       },
-      yearNum // 👈 Enviar el año al backend
+      yearNum,
+      // 👇 Callback de progreso para la barra de carga
+      (progressData) => {
+        setProgress(progressData);
+      }
     );
 
     return () => es.close();
@@ -196,12 +203,87 @@ const CobroViewer = () => {
           </header>
 
           <main className="flex-1 p-8">
-            {loading && logs.length === 0 && (
-              <div className="h-[60vh] flex flex-col items-center justify-center space-y-6">
-                <div className="relative w-20 h-20">
-                  <div className="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+            {/* 📊 Barra de Progreso */}
+            {loading && (
+              <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-10 h-10">
+                        <div className="absolute inset-0 border-3 border-blue-100 rounded-full"></div>
+                        <div className="absolute inset-0 border-3 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">
+                          {progress.pct < 100 ? "Procesando..." : "¡Completado!"}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-0.5 max-w-lg truncate">
+                          {progress.text || "Iniciando..."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+                        {progress.pct}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Barra de progreso */}
+                  <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+                    {/* Fondo animado */}
+                    <div 
+                      className="absolute inset-0 h-full rounded-full transition-all duration-700 ease-out"
+                      style={{ 
+                        width: `${progress.pct}%`,
+                        background: progress.pct >= 100 
+                          ? 'linear-gradient(90deg, #059669, #10b981)' 
+                          : 'linear-gradient(90deg, #2563eb, #6366f1, #8b5cf6)'
+                      }}
+                    >
+                      {/* Efecto shimmer */}
+                      {progress.pct < 100 && (
+                        <div 
+                          className="absolute inset-0 animate-pulse"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                            animation: 'shimmer 2s infinite'
+                          }}
+                        ></div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Indicadores de fase */}
+                  <div className="flex justify-between mt-4">
+                    {[
+                      { label: "Login", minPct: 0 },
+                      { label: "Sheets", minPct: 12 },
+                      { label: "Navegación", minPct: 22 },
+                      { label: "Procesando", minPct: 25 },
+                      { label: "Completo", minPct: 100 },
+                    ].map((fase, idx) => (
+                      <div key={idx} className="flex flex-col items-center gap-1">
+                        <div className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+                          progress.pct >= fase.minPct 
+                            ? progress.pct >= 100 
+                              ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' 
+                              : 'bg-blue-600 shadow-lg shadow-blue-600/30' 
+                            : 'bg-slate-200'
+                        }`}></div>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider ${
+                          progress.pct >= fase.minPct ? 'text-slate-700' : 'text-slate-300'
+                        }`}>{fase.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* Estado vacío con loading */}
+            {loading && logs.length === 0 && progress.pct < 25 && (
+              <div className="h-[40vh] flex flex-col items-center justify-center space-y-6">
                 <div className="text-center space-y-2">
                   <h3 className="text-xl font-bold text-slate-800">Iniciando Motores</h3>
                   <p className="text-slate-500 max-w-xs mx-auto">
@@ -215,6 +297,14 @@ const CobroViewer = () => {
           </main>
         </div>
       )}
+
+      {/* Estilos para animación shimmer */}
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+      `}</style>
     </div>
   );
 };

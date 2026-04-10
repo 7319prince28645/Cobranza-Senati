@@ -67,7 +67,13 @@ app.get("/automatizacion-stream", async (req, res) => {
     const year = parseInt(req.query.year, 10) || new Date().getFullYear();
     
     await main((msg) => {
-      res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      if (msg?.pct !== undefined) {
+        res.write(`data: ${JSON.stringify({ progress: msg })}\n\n`);
+      } else if (msg?.hoja) {
+        res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      } else {
+        res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      }
     }, year);
     
     res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
