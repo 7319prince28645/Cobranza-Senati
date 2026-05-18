@@ -28,23 +28,51 @@ router.get('/reportes/stream', async (req, res) => {
   };
 
   try {
-    for (let i = 0; i < idArray.length; i++) {
-      const id = idArray[i];
-      const basePct = (i / idArray.length) * 100;
-      const stepPct = 100 / idArray.length;
+    const idProgressMap = {};
 
-      const onProgress = (localPct, text) => {
-        const globalPct = Math.round(basePct + (localPct * stepPct / 100));
-        safeSend({ type: 'progress', pct: globalPct, text: `[${id}] ${text}` });
-      };
-
-      try {
-        const result = await FetchReportes(id, fechaInicio, fechaFin, onProgress);
-        safeSend({ type: 'result', data: { id, data: result, error: null } });
-      } catch (err) {
-        safeSend({ type: 'result', data: { id, data: null, error: err.message } });
+    const onProgress = (localPct, text, currentId) => {
+      idProgressMap[currentId] = localPct;
+      let totalPct = 0;
+      for (const id of idArray) {
+        totalPct += (idProgressMap[id] || 0);
       }
+      const globalPct = Math.round(totalPct / idArray.length);
+      safeSend({ type: 'progress', pct: globalPct, text: `[${currentId}] ${text}` });
+    };
+
+    const onResultMap = (id, resultData, errorStr) => {
+      if (errorStr) {
+        safeSend({ type: 'result', data: { id, data: null, error: errorStr } });
+      } else {
+        safeSend({ type: 'result', data: { id, data: resultData, error: null } });
+      }
+    };
+
+    const chunkArray = (array, size) => {
+      const result = [];
+      for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+      }
+      return result;
+    };
+
+    const idBatches = chunkArray(idArray, 5); // Procesar estrictamente de 5 en 5
+    
+    for (let index = 0; index < idBatches.length; index++) {
+      const batch = idBatches[index];
+      console.log(`[Batch ${index+1}/${idBatches.length}] Procesando simultáneamente ${batch.length} reporte(s): ${batch.join(', ')}`);
+      
+      await Promise.all(batch.map(async (idToProcess) => {
+        try {
+          // Cada uno lanza su propio Chrome independiente
+          const result = await FetchReportes(idToProcess, fechaInicio, fechaFin, (pct, txt) => onProgress(pct, txt, idToProcess));
+          onResultMap(idToProcess, result, null);
+        } catch (error) {
+          onResultMap(idToProcess, null, error.message);
+        }
+      }));
     }
+
     safeSend({ type: 'done' });
   } catch (error) {
     safeSend({ type: 'error', message: error.message });
@@ -54,3 +82,4 @@ router.get('/reportes/stream', async (req, res) => {
 });
 
 module.exports = router;
+

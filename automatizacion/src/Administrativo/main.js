@@ -11,9 +11,11 @@ const { openReportPage, submitFormAndShowCalendar } = require("./helpers/navigat
 chromium.use(stealth);
 
 async function FetchReportes(id, fechaInicio, fechaFin, onProgress) {
+  const ts = () => new Date().toLocaleTimeString();
+  console.log(`⚡ [${ts()}] LANZANDO Chrome para ID: ${id}`);
   const browser = await chromium.launch({
     headless: true,
-    slowMo: 10, // Un pequeño delay ayuda a la estabilidad visual y de red
+    slowMo: 0,
     args: [
       "--no-sandbox", 
       "--disable-setuid-sandbox",
@@ -31,10 +33,10 @@ async function FetchReportes(id, fechaInicio, fechaFin, onProgress) {
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
     });
     const page = await context.newPage();
-    console.log(`🚀 Iniciando reporte para ID: ${id}`);
+    console.log(`🚀 [${ts()}] Chrome abierto para ID: ${id}`);
     if (onProgress) onProgress(10, 'Iniciando navegador y abriendo SINFO...');
     
-    await login(page, "000196942", "040766");
+    await login(page, "001672204", "Pucallpa2026");
     if (onProgress) onProgress(25, 'Sesión iniciada, navegando al reporte...');
     
     console.log("⏳ Estabilizando sesión...");
@@ -167,7 +169,7 @@ async function FetchReportes(id, fechaInicio, fechaFin, onProgress) {
     const resumenPorCurso = generarResumenPorCursoConHorarioFrecuente(calendarioFiltrado);
     
     if (onProgress) onProgress(100, '¡Extracción Completada!');
-    console.log("✅ Reporte completado con éxito");
+    console.log(`✅ [${ts()}] Reporte completado con éxito para ID: ${id}`);
     return {
       id: finalId,
       nombre: finalNombre,
@@ -180,7 +182,7 @@ async function FetchReportes(id, fechaInicio, fechaFin, onProgress) {
     console.error(`❌ Error en FetchReportes: ${error.message}`);
     throw error;
   } finally {
-    console.log("🔒 Cerrando navegador...");
+    console.log("🔒 Cerrando navegador...");  
     await browser.close().catch(() => {});
   }
 }

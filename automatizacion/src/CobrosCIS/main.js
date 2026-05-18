@@ -33,7 +33,7 @@ async function main(onProgress = () => {}, year = new Date().getFullYear()) {
     // --- Fase 1: Login (0% - 10%) ---
     onProgress({ pct: 2, text: '🚀 Iniciando navegador en modo oculto...' });
     
-    await login(page, "000196942", "040766");
+    await login(page, "001672204", "Pucallpa2026");
     onProgress({ pct: 10, text: '✅ Sesión iniciada correctamente' });
 
     // --- Fase 2: Leer IDs de Google Sheets (10% - 20%) ---
