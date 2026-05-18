@@ -47,7 +47,7 @@ function RenderFechas() {
     // Asegurar IDs únicos para evitar duplicar peticiones en un mismo proceso
     const rawIds = [...new Set(searchId.split(/[\s,]+/).filter(id => id.trim().length > 0))];
     if (rawIds.length === 0) {
-      alert("Por favor ingrese al menos un ID");
+      alert("Por favor ingrese al menos un IDaa");
       return;
     }
 
