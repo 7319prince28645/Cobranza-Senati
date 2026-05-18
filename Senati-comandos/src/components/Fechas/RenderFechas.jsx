@@ -39,7 +39,9 @@ function RenderFechas() {
   const [resultados, setResultados] = useState([]);
   const [indexResultadoActivo, setIndexResultadoActivo] = useState(0);
   const [filtroCarga, setFiltroCarga] = useState(false);
+  const [vistaSupervision, setVistaSupervision] = useState(false);
   const pdfRef = useRef();
+  const supervisionRef = useRef();
 
   const handleConsultar = async () => {
     // Asegurar IDs únicos para evitar duplicar peticiones en un mismo proceso
@@ -170,6 +172,68 @@ function RenderFechas() {
         before: "#no-split",
         after: ".page-break",
       },
+    };
+    html2pdf().set(opt).from(element).save();
+  };
+
+  const handleExportarExcelSupervision = () => {
+    const dataToExport = (filtroCarga ? resultados.filter(r => dashboardData.find(d => d.id === r.id)?.tieneCarga) : resultados);
+    if (dataToExport.length === 0) return;
+
+    const rows = [
+      ["CONTROL DE SUPERVISIÓN GENERAL"],
+      [`PERIODO: ${fechaInicio} AL ${fechaFin}`],
+      [],
+      ["INSTRUCTOR", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"]
+    ];
+
+    dataToExport.forEach(res => {
+      if (!res.data) return;
+      const instructorData = res.data;
+      const row = [instructorData.nombre];
+      
+      ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'].forEach(dayName => {
+        const sessionsForDay = (instructorData.calendario || []).filter(s => {
+          const [d, m, y] = s.dia.split("/").map(Number);
+          const date = new Date(y, m - 1, d);
+          const dayIdx = date.getDay();
+          const targetIdx = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].indexOf(dayName);
+          return dayIdx === targetIdx;
+        });
+
+        const patterns = sessionsForDay.reduce((acc, s) => {
+          const cleanTime = (t) => t?.replace(/:/g, '') || '';
+          const patternKey = `${cleanTime(s.horarioInicio)}-${cleanTime(s.horarioFin)} < ${s.aula || 'S/A'}`;
+          if (!acc.includes(patternKey)) acc.push(patternKey);
+          return acc;
+        }, []);
+
+        row.push(patterns.join("\n"));
+      });
+      rows.push(row);
+    });
+
+    const hoja = XLSX.utils.aoa_to_sheet(rows);
+    
+    // Auto-width adjustment simple logic
+    const wscols = [{wch: 30}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 25}, {wch: 25}];
+    hoja['!cols'] = wscols;
+
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Supervision");
+    XLSX.writeFile(libro, `supervision_general_${fechaInicio}_${fechaFin}.xlsx`);
+  };
+
+  const handleDescargarPDFSupervision = () => {
+    const element = supervisionRef.current;
+    if (!element) return;
+    
+    const opt = {
+      margin: [0.3, 0.3],
+      filename: `supervision_general_${fechaInicio}_${fechaFin}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "in", format: "a3", orientation: "landscape" },
     };
     html2pdf().set(opt).from(element).save();
   };
@@ -385,6 +449,16 @@ function RenderFechas() {
           />
           <label htmlFor="filtroCarga" className="text-sm font-semibold text-gray-700 cursor-pointer select-none">Ocultar sin carga</label>
         </div>
+        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+          <input 
+            type="checkbox" 
+            id="vistaSupervision" 
+            checked={vistaSupervision} 
+            onChange={(e) => setVistaSupervision(e.target.checked)}
+            className="w-4 h-4 cursor-pointer accent-blue-600"
+          />
+          <label htmlFor="vistaSupervision" className="text-sm font-semibold text-blue-800 cursor-pointer select-none">Vista Supervisión</label>
+        </div>
       </div>
 
       {/* Dashboard Summary */}
@@ -538,6 +612,136 @@ function RenderFechas() {
                  <div className="flex items-center gap-1.5 text-[8px] text-gray-400 uppercase font-black"><span className="w-2 h-2 rounded-full bg-blue-600"></span> Prep/Async OK</div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vista de Supervisión Consolidated (Formato Maestro para Impresión) */}
+      {vistaSupervision && resultados.length > 0 && (
+        <div className="space-y-4">
+          <div 
+            ref={supervisionRef}
+            className="bg-white p-4 md:p-8 rounded-xl border-2 border-gray-800 shadow-sm mt-6 w-full overflow-x-auto print:p-0 print:border-0"
+          >
+            <div className="min-w-[1200px]">
+              <div className="relative text-center mb-8">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t-2 border-gray-800"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-white px-8 text-lg font-black text-gray-900 tracking-[0.3em] uppercase text-center">Control de Supervisión General</span>
+                </div>
+              </div>
+
+              {/* Info de Periodo */}
+              <div className="flex justify-between items-center mb-4 px-2">
+                <div className="text-[10px] font-black text-gray-400 uppercase">SENATI - CFP PUCALLPA</div>
+                <div className="text-[10px] font-black text-gray-800 uppercase tracking-widest">
+                  Periodo: {fechaInicio.split('-').reverse().join('/')} AL {fechaFin.split('-').reverse().join('/')}
+                </div>
+              </div>
+
+              {/* Header de Tabla */}
+              <div className="grid grid-cols-7 bg-gray-900 text-white rounded-t-lg">
+                <div className="p-3 text-[10px] font-black uppercase border-r border-gray-700">Instructor</div>
+                {['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'].map((day) => (
+                  <div key={day} className="p-3 text-[10px] font-black uppercase border-r border-gray-700 last:border-r-0 text-center">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Filas de Instructores */}
+              <div className="border-x border-b border-gray-300 rounded-b-lg divide-y divide-gray-200">
+                {resultados
+                  .filter(res => {
+                    if (!filtroCarga) return true;
+                    const dData = dashboardData.find(d => d.id === res.id);
+                    return dData?.tieneCarga;
+                  })
+                  .map((res, resIdx) => {
+                  if (!res.data) return null;
+                  const instructorData = res.data;
+                  
+                  return (
+                    <div key={resIdx} className="grid grid-cols-7 hover:bg-gray-50 transition-colors group break-inside-avoid">
+                      {/* Nombre del Instructor */}
+                      <div className="p-3 border-r border-gray-200 bg-gray-50/50 group-hover:bg-blue-50/30 flex flex-col justify-center">
+                        <span className="text-[10px] font-black text-gray-800 leading-tight uppercase">{instructorData.nombre}</span>
+                        <span className="text-[9px] text-gray-400 font-mono mt-1 tracking-tighter">{instructorData.id}</span>
+                      </div>
+
+                      {/* Días de la semana */}
+                      {['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'].map((dayName) => {
+                        const sessionsForDay = (instructorData.calendario || []).filter(s => {
+                          const [d, m, y] = s.dia.split("/").map(Number);
+                          const date = new Date(y, m - 1, d);
+                          const dayIdx = date.getDay();
+                          const targetIdx = ["DOMINGO", "LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES", "SABADO"].indexOf(dayName);
+                          return dayIdx === targetIdx;
+                        });
+
+                        // Agrupar por patrones únicos
+                        const patterns = sessionsForDay.reduce((acc, s) => {
+                          const cleanTime = (t) => t?.replace(/:/g, '') || '';
+                          const patternKey = `${cleanTime(s.horarioInicio)}-${cleanTime(s.horarioFin)} < ${s.aula || 'S/A'}`;
+                          if (!acc[patternKey]) acc[patternKey] = { display: patternKey, link: s.aula };
+                          return acc;
+                        }, {});
+
+                        const uniquePatterns = Object.values(patterns);
+
+                        return (
+                          <div key={dayName} className="p-2 border-r border-gray-200 last:border-r-0 flex flex-col gap-1.5 min-h-[60px]">
+                            {uniquePatterns.length > 0 ? uniquePatterns.map((p, pIdx) => (
+                              <div key={pIdx} className="flex items-center justify-between group/item">
+                                <span className="font-mono text-[10px] text-gray-700 leading-none tracking-tighter">
+                                  {p.display}
+                                </span>
+                                {p.link && (p.link.toLowerCase().includes("http") || p.link.toLowerCase().includes("www")) && (
+                                  <a 
+                                    href={p.link.startsWith("http") ? p.link : `https://${p.link}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="ml-1 opacity-0 group-hover/item:opacity-100 p-0.5 bg-blue-600 text-white rounded text-[8px] print:hidden"
+                                  >
+                                    🚀
+                                  </a>
+                                )}
+                              </div>
+                            )) : (
+                              <div className="text-gray-300 text-[10px] font-mono text-center mt-2">-</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          
+          {/* Botones de Exportación Supervisión */}
+          <div className="flex justify-end gap-3 print:hidden">
+            <button 
+              onClick={handleExportarExcelSupervision}
+              className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 transition flex items-center gap-2 shadow-lg shadow-emerald-100"
+            >
+              <span>📊</span> Exportar Excel Consolidado
+            </button>
+            <button 
+              onClick={handleDescargarPDFSupervision}
+              className="bg-rose-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-rose-700 transition flex items-center gap-2 shadow-lg shadow-rose-100"
+            >
+              <span>📄</span> Descargar PDF Bonito
+            </button>
+            <button 
+              onClick={() => window.print()}
+              className="bg-gray-800 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-900 transition flex items-center gap-2 shadow-lg shadow-gray-200"
+            >
+              <span>🖨️</span> Imprimir Todo
+            </button>
           </div>
         </div>
       )}
